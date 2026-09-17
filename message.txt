@@ -1,0 +1,202 @@
+BEGIN;
+
+CREATE TABLE users (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'customer',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (email = BTRIM(email) AND BTRIM(email) <> ''),
+    CHECK (BTRIM(password_hash) <> ''),
+    CHECK (role IN ('customer', 'admin'))
+);
+
+CREATE UNIQUE INDEX users_email_lower_unique
+    ON users (LOWER(email));
+
+CREATE TABLE categories (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    CHECK (BTRIM(name) <> ''),
+    CHECK (BTRIM(slug) <> '')
+);
+
+CREATE UNIQUE INDEX categories_name_lower_unique
+    ON categories (LOWER(name));
+
+CREATE UNIQUE INDEX categories_slug_lower_unique
+    ON categories (LOWER(slug));
+
+CREATE TABLE brands (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    CHECK (BTRIM(name) <> '')
+);
+
+CREATE UNIQUE INDEX brands_name_lower_unique
+    ON brands (LOWER(name));
+
+CREATE TABLE products (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    category_id BIGINT NOT NULL REFERENCES categories(id)
+        ON DELETE RESTRICT,
+    brand_id BIGINT NOT NULL REFERENCES brands(id)
+        ON DELETE RESTRICT,
+    name VARCHAR(255) NOT NULL,
+    color VARCHAR(100) NOT NULL,
+    description TEXT,
+    price NUMERIC(10, 2) NOT NULL,
+    main_image_url VARCHAR(500) NOT NULL,
+    is_new BOOLEAN NOT NULL DEFAULT FALSE,
+    is_popular BOOLEAN NOT NULL DEFAULT FALSE,
+    status VARCHAR(10) NOT NULL DEFAULT 'active',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (BTRIM(name) <> ''),
+    CHECK (BTRIM(color) <> ''),
+    CHECK (BTRIM(main_image_url) <> ''),
+    CHECK (price > 0),
+    CHECK (status IN ('active', 'hidden'))
+);
+
+CREATE TABLE product_images (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES products(id)
+        ON DELETE CASCADE,
+    image_url VARCHAR(500) NOT NULL,
+    sort_order SMALLINT NOT NULL,
+    CHECK (BTRIM(image_url) <> ''),
+    CHECK (sort_order BETWEEN 1 AND 3),
+    UNIQUE (product_id, sort_order)
+);
+
+CREATE TABLE product_sizes (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES products(id)
+        ON DELETE CASCADE,
+    size NUMERIC(4, 1) NOT NULL,
+    stock_quantity INTEGER NOT NULL DEFAULT 0,
+    CHECK (size BETWEEN 30 AND 50),
+    CHECK (stock_quantity >= 0),
+    UNIQUE (product_id, size)
+);
+
+CREATE TABLE carts (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id)
+        ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cart_items (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cart_id BIGINT NOT NULL REFERENCES carts(id)
+        ON DELETE CASCADE,
+    product_size_id BIGINT NOT NULL REFERENCES product_sizes(id)
+        ON DELETE RESTRICT,
+    quantity INTEGER NOT NULL,
+    CHECK (quantity BETWEEN 1 AND 10),
+    UNIQUE (cart_id, product_size_id)
+);
+
+CREATE TABLE favorites (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id)
+        ON DELETE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(id)
+        ON DELETE RESTRICT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, product_id)
+);
+
+CREATE TABLE orders (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    public_number VARCHAR(30) NOT NULL UNIQUE,
+    user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+    customer_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    email VARCHAR(255),
+    city VARCHAR(100) NOT NULL,
+    address VARCHAR(500) NOT NULL,
+    customer_comment TEXT,
+    delivery_method VARCHAR(20) NOT NULL,
+    payment_method VARCHAR(30) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'new',
+    total_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (BTRIM(public_number) <> ''),
+    CHECK (BTRIM(customer_name) <> ''),
+    CHECK (BTRIM(phone) <> ''),
+    CHECK (BTRIM(city) <> ''),
+    CHECK (BTRIM(address) <> ''),
+    CHECK (delivery_method IN ('courier', 'pickup')),
+    CHECK (payment_method IN
+        ('cash_on_delivery', 'card_on_delivery')),
+    CHECK (status IN
+        ('new', 'processing', 'completed', 'cancelled')),
+    CHECK (total_amount >= 0)
+);
+
+CREATE TABLE order_items (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id BIGINT NOT NULL REFERENCES orders(id)
+        ON DELETE CASCADE,
+    product_id BIGINT NOT NULL REFERENCES products(id)
+        ON DELETE RESTRICT,
+    product_name VARCHAR(255) NOT NULL,
+    size NUMERIC(4, 1) NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_price NUMERIC(10, 2) NOT NULL,
+    CHECK (BTRIM(product_name) <> ''),
+    CHECK (size BETWEEN 30 AND 50),
+    CHECK (quantity BETWEEN 1 AND 10),
+    CHECK (unit_price > 0)
+);
+
+CREATE TABLE order_status_history (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    order_id BIGINT NOT NULL REFERENCES orders(id)
+        ON DELETE CASCADE,
+    previous_status VARCHAR(20),
+    new_status VARCHAR(20) NOT NULL,
+    changed_by_user_id BIGINT REFERENCES users(id)
+        ON DELETE SET NULL,
+    changed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CHECK (previous_status IS NULL OR previous_status IN
+        ('new', 'processing', 'completed', 'cancelled')),
+    CHECK (new_status IN
+        ('new', 'processing', 'completed', 'cancelled')),
+    CHECK (previous_status IS NULL OR previous_status <> new_status)
+);
+
+CREATE INDEX products_catalog_index
+    ON products (status, category_id, brand_id, created_at DESC);
+
+CREATE INDEX product_images_product_index
+    ON product_images (product_id);
+
+CREATE INDEX product_sizes_product_index
+    ON product_sizes (product_id);
+
+CREATE INDEX cart_items_cart_index
+    ON cart_items (cart_id);
+
+CREATE INDEX favorites_user_index
+    ON favorites (user_id);
+
+CREATE INDEX orders_user_created_index
+    ON orders (user_id, created_at DESC);
+
+CREATE INDEX orders_status_created_index
+    ON orders (status, created_at DESC);
+
+CREATE INDEX order_items_order_index
+    ON order_items (order_id);
+
+CREATE INDEX order_status_history_order_index
+    ON order_status_history (order_id, changed_at DESC);
+
+COMMIT;

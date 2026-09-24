@@ -1,0 +1,40 @@
+@model ShoeStore.Models.RegisterViewModel
+@{ ViewData["Title"] = "Регистрация"; }
+
+<section class="account-page account-page--register">
+  <p class="account-breadcrumb">Регистрация</p>
+  <h1>Создание аккаунта</h1>
+  <p class="account-page__lead">Создайте аккаунт, сохраняйте избранное, отслеживайте заказы<br />и получайте доступ к эксклюзивным предложениям.</p>
+  @if (TempData["Message"] is string message)
+  {
+    <p class="account-success" role="status">@message</p>
+  }
+  <div class="account-layout">
+    <form method="post" class="account-form-card account-form-card--register" data-account-form novalidate>
+      <div asp-validation-summary="All" class="account-validation"></div>
+      <div class="account-form-grid"><label>Имя<input asp-for="FirstName" placeholder="Введите имя" autocomplete="given-name" /></label><label>Фамилия<input name="lastName" placeholder="Введите фамилию" autocomplete="family-name" /></label></div>
+      <div class="account-form-grid"><label>E-mail<input asp-for="Email" type="email" placeholder="example@email.com" autocomplete="email" /></label><label>Телефон<input name="phone" placeholder="+7 (___) ___-__-__" autocomplete="tel" /></label></div>
+      <label>Пароль<span class="account-password"><input asp-for="Password" placeholder="Введите пароль" autocomplete="new-password" /><button type="button" data-password-toggle aria-label="Показать пароль">◉</button></span></label>
+      <label>Подтвердите пароль<span class="account-password"><input asp-for="ConfirmPassword" placeholder="Повторите пароль" autocomplete="new-password" /><button type="button" data-password-toggle aria-label="Показать пароль">◉</button></span></label>
+      <label class="account-check"><input asp-for="AcceptTerms" /><span></span>Я согласен с <u>условиями</u> и политикой конфиденциальности</label>
+      <label class="account-check"><input type="checkbox" name="marketing" /><span></span>Получать новости и эксклюзивные предложения</label>
+      <button class="button account-submit" type="submit">Создать аккаунт</button>
+      <a class="account-secondary" asp-action="Login">Уже есть аккаунт? Войти</a>
+    </form>
+
+    <aside class="account-benefit-card account-benefit-card--register" data-account-card>
+      <img src="~/images/hero/3xl-urban-feet-v5-960.webp" srcset="/images/hero/3xl-urban-feet-v5-960.webp 960w, /images/hero/3xl-urban-feet-v5-1600.webp 1600w" sizes="(max-width:760px) 100vw, 50vw" alt="Balenciaga 3XL" decoding="async" />
+      <div class="account-benefit-card__content">
+        <h2>Преимущества<br />аккаунта RONINxBLOCK</h2>
+        <ul>
+          <li><i>♡</i><span><b>Сохраняйте избранное</b><small>Добавляйте товары в избранное<br />и создавайте свои подборки.</small></span></li>
+          <li><i>▤</i><span><b>История заказов</b><small>Отслеживайте заказы и смотрите<br />их историю в личном кабинете.</small></span></li>
+          <li><i>◇</i><span><b>Эксклюзивные дропы</b><small>Получайте ранний доступ к новинкам<br />и лимитированным коллекциям.</small></span></li>
+          <li><i>ϟ</i><span><b>Быстрый чекaут</b><small>Сохраняйте данные и оформляйте<br />заказы в один клик.</small></span></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<partial name="_AccountBenefits" />

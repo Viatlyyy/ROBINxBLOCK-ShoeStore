@@ -1,0 +1,34 @@
+@model ShoeStore.Models.LoginViewModel
+@{ ViewData["Title"] = "Авторизация"; }
+
+<section class="account-page">
+  <p class="account-breadcrumb"><a asp-controller="Home" asp-action="Index">Главная</a><span>/</span> Авторизация</p>
+  <h1>Вход в аккаунт</h1>
+  <div class="account-layout">
+    <form method="post" class="account-form-card" data-account-form novalidate>
+      <h2>Добро пожаловать</h2>
+      <p class="account-form-card__intro">Войдите, чтобы продолжить покупки в RONINxBLOCK</p>
+      <div asp-validation-summary="All" class="account-validation"></div>
+      <label>E-mail<input asp-for="Email" type="email" placeholder="Введите e-mail" autocomplete="email" /></label>
+      <label>Пароль<span class="account-password"><input asp-for="Password" placeholder="Введите пароль" autocomplete="current-password" /><button type="button" data-password-toggle aria-label="Показать пароль">◉</button></span></label>
+      <div class="account-form-card__subline"><label class="account-check"><input type="checkbox" name="remember" /><span></span>Запомнить меня</label></div>
+      <button class="button account-submit" type="submit">Войти</button>
+      <a class="account-secondary" asp-action="Register">Создать аккаунт</a>
+    </form>
+
+    <aside class="account-benefit-card account-benefit-card--login" data-account-card>
+      <img src="~/images/hero/9060-urban-feet-v6-960.webp" srcset="/images/hero/9060-urban-feet-v6-960.webp 960w, /images/hero/9060-urban-feet-v6-1600.webp 1600w" sizes="(max-width:760px) 100vw, 50vw" alt="New Balance 9060" decoding="async" />
+      <div class="account-benefit-card__content">
+        <h2>Личный кабинет RONINxBLOCK</h2>
+        <p>Войдите в аккаунт и получите максимум от покупок в RONINxBLOCK</p>
+        <ul>
+          <li><i>◇</i><span><b>Отслеживайте заказы</b><small>Узнавайте статус доставки в реальном времени</small></span></li>
+          <li><i>♡</i><span><b>Сохраняйте избранное</b><small>Создавайте список любимых товаров</small></span></li>
+          <li><i>ϟ</i><span><b>Быстрая покупка</b><small>Сохраняйте адреса и карты для удобства</small></span></li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<partial name="_AccountBenefits" />

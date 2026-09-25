@@ -1,0 +1,66 @@
+.account-page { max-width: 1360px; margin: 0 auto; padding: 32px 5.2% 0; }
+.account-breadcrumb { margin: 0 0 16px; color: #858585; font-size: 11px; }
+.account-breadcrumb a { transition: color .2s ease; }
+.account-breadcrumb a:hover { color: #111; }
+.account-breadcrumb span { margin: 0 9px; color: #c8c8c8; }
+.account-page > h1 { margin: 0 0 25px; font-size: 42px; letter-spacing: -2.2px; }
+.account-page__lead { margin: -8px 0 27px; color: #727272; font-size: 12px; line-height: 1.55; }
+.account-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(360px,1fr); gap: 17px; max-width: 1140px; }
+.account-form-card, .account-benefit-card { min-height: 505px; overflow: hidden; border: 1px solid #e7e7e7; border-radius: 4px; background: #fff; }
+.account-form-card { padding: 37px 35px 27px; animation: account-card-in .64s cubic-bezier(.16,1,.3,1) both; }
+.account-form-card h2 { margin: 0 0 8px; font-size: 19px; letter-spacing: -.55px; }
+.account-form-card__intro { margin: 0 0 30px; color: #777; font-size: 11px; }
+.account-form-card > label, .account-form-grid label { display: flex; flex-direction: column; gap: 9px; margin-bottom: 19px; font-size: 11px; font-weight: 600; }
+.account-form-card input { width: 100%; height: 46px; padding: 0 14px; border: 1px solid #e5e5e5; outline: 0; font: 12px Inter,Arial,sans-serif; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+.account-form-card input:focus { border-color: #111; box-shadow: 0 0 0 3px rgba(0,0,0,.055); }
+.account-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.account-form-grid label { margin-bottom: 19px; }
+.account-password { position: relative; display: block; }
+.account-password input { padding-right: 48px; }
+.account-password button { position: absolute; top: 0; right: 0; width: 46px; height: 46px; border: 0; color: #aaa; background: transparent; cursor: pointer; transition: color .2s ease, transform .2s ease; }
+.account-password button:hover { color: #111; transform: scale(1.12); }
+.account-form-card__subline { display: flex; align-items: center; justify-content: space-between; margin: 0 0 25px; font-size: 11px; }
+.account-form-card__subline > a { color: #111; font-weight: 600; text-decoration: underline; }
+.account-check { position: relative; display: flex !important; flex-direction: row !important; align-items: center; gap: 9px !important; margin: 0 0 14px !important; color: #222; font-size: 11px !important; font-weight: 400 !important; line-height: 1.3; cursor: pointer; }
+.account-check input { position: absolute; opacity: 0; }
+.account-check > span { flex: 0 0 15px; width: 15px; height: 15px; border: 1px solid #d9d9d9; background: #fff; transition: background .2s ease, border-color .2s ease, transform .2s ease; }
+.account-check input:checked + span { border-color: #111; background: #111; }
+.account-check input:checked + span::after { display: block; content: '✓'; color: #fff; font-size: 10px; line-height: 13px; text-align: center; }
+.account-check:hover > span { border-color: #111; transform: scale(1.08); }
+.account-submit { display: flex; justify-content: center; width: 100%; margin-top: 22px; padding: 17px 10px; font-size: 11px; cursor: pointer; transition: transform .25s cubic-bezier(.16,1,.3,1), background .25s ease !important; }
+.account-submit:hover { background: #333 !important; transform: translateY(-2px); }
+.account-secondary { display: flex; justify-content: center; margin-top: 10px; padding: 15px 8px; border: 1px solid #d8d8d8; font-size: 11px; font-weight: 600; transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+.account-secondary:hover { border-color: #111; background: #fafafa; transform: translateY(-1px); }
+.account-separator { display: flex; align-items: center; gap: 9px; margin: 24px 0; color: #a3a3a3; font-size: 9px; text-align: center; }
+.account-separator::before, .account-separator::after { flex: 1; height: 1px; content: ''; background: #ececec; }
+.account-terms { margin: 0; color: #888; font-size: 9px; line-height: 1.5; }
+.account-validation { margin: 0 0 15px; color: #b40000; font-size: 10px; }
+.account-form-card--register { min-height: 0; padding-bottom: 23px; }
+.account-form-card--register .account-submit { margin-top: 20px; }
+.account-benefit-card { animation: account-card-in .7s .13s cubic-bezier(.16,1,.3,1) both; }
+.account-benefit-card > img { display: block; width: 100%; height: 232px; object-fit: cover; filter: grayscale(1); transition: filter .6s ease, transform .7s cubic-bezier(.16,1,.3,1); }
+.account-benefit-card:hover > img { filter: grayscale(.42); transform: scale(1.025); }
+.account-benefit-card__content { padding: 27px 33px; }
+.account-benefit-card__content h2 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.7px; line-height: 1.03; }
+.account-benefit-card__content > p { margin: 0 0 21px; color: #666; font-size: 11px; line-height: 1.5; }
+.account-benefit-card__content ul { display: grid; gap: 18px; margin: 0; padding: 0; list-style: none; }
+.account-benefit-card__content li { display: flex; align-items: center; gap: 15px; }
+.account-benefit-card__content i { display: grid; place-items: center; flex: 0 0 29px; width: 29px; height: 29px; border: 1px solid #e5e5e5; border-radius: 50%; font-size: 15px; font-style: normal; transition: transform .3s cubic-bezier(.16,1,.3,1), background .3s ease; }
+.account-benefit-card__content li:hover i { background: #f5f5f5; transform: rotate(-9deg) scale(1.12); }
+.account-benefit-card__content b, .account-benefit-card__content small { display: block; }
+.account-benefit-card__content b { font-size: 12px; }
+.account-benefit-card__content small { margin-top: 3px; color: #777; font-size: 9px; line-height: 1.35; }
+.account-benefit-card--register > img { height: 234px; object-position: center 70%; }
+.account-benefit-card--register .account-benefit-card__content { padding-top: 24px; }
+.account-benefit-card--register .account-benefit-card__content h2 { margin-bottom: 18px; }
+.account-benefit-card--register .account-benefit-card__content ul { gap: 16px; }
+.account-benefits { display: grid; grid-template-columns: repeat(4,1fr); max-width: 1200px; margin: 27px auto 0; padding: 26px 5.2%; border-top: 1px solid #ececec; }
+.account-benefits > div { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.account-benefits > div > span { font-size: 23px; }
+.account-benefits p { margin: 0; font-size: 10px; }
+.account-benefits b, .account-benefits small { display: block; }
+.account-benefits small { margin-top: 4px; color: #999; font-size: 9px; }
+@keyframes account-card-in { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .account-form-card, .account-benefit-card { animation-duration: .7s !important; } .account-benefit-card > img { transition-duration: .7s !important; } }
+@media (max-width: 720px) { .account-layout { grid-template-columns: 1fr; } .account-benefit-card { min-height: 0; } .account-benefit-card > img { height: 210px; } .account-benefits { grid-template-columns: 1fr 1fr; gap: 20px 8px; padding-inline: 20px; } .account-benefits > div { justify-content: flex-start; } }
+@media (max-width: 440px) { .account-page { padding: 21px 20px 0; } .account-page > h1 { font-size: 28px; } .account-form-card { padding: 24px 18px; } .account-form-grid { grid-template-columns: 1fr; gap: 0; } .account-benefit-card__content { padding: 21px 18px; } }

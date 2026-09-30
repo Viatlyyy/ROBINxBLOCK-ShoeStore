@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.Data;
 using ShoeStore.Models;
 
+// В Development автоматически загружаются User Secrets проекта ShoeStore.
+// Подключение задаём там: у каждого своя база, и пароль не попадает в Git.
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
@@ -14,15 +16,18 @@ builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
     if (string.IsNullOrWhiteSpace(connectionString))
         throw new InvalidOperationException(
             "Не задана строка подключения. Выполните: dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"...\"");
+    // Npgsql связывает EF Core с PostgreSQL. Имя подключения должно совпадать с ключом в секретах.
     options.UseNpgsql(connectionString);
 });
 
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole>(options =>
     {
+        // Один email — один аккаунт. Проверку и хеширование пароля выполняет Identity.
         options.User.RequireUniqueEmail = true;
         options.Password.RequiredLength = 8;
         options.Password.RequireNonAlphanumeric = true;
+        // Блокировка защищает аккаунт, ограничитель запросов ниже — адрес клиента.
         options.Lockout.AllowedForNewUsers = true;
         options.Lockout.MaxFailedAccessAttempts = 5;
         options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
@@ -30,12 +35,14 @@ builder.Services
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+// При активности билет авторизации продлевается. Без активности он истекает через три часа.
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
+    // Локально разрешаем профиль http, вне Development cookie отправляется только по HTTPS.
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
@@ -43,10 +50,12 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(3);
 });
 
+// Токен в POST-форме не даёт чужому сайту отправить запрос от имени пользователя.
 builder.Services.AddAntiforgery(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
+    // Локально разрешаем профиль http, вне Development cookie отправляется только по HTTPS.
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
@@ -60,6 +69,7 @@ builder.Services.AddRateLimiter(options =>
         context.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
         await context.HttpContext.Response.WriteAsync("Слишком много запросов. Повторите попытку позже.", cancellationToken);
     };
+    // Для каждого IP свой счётчик: десять запросов за пять минут, без очереди.
     options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions
@@ -71,12 +81,18 @@ builder.Services.AddRateLimiter(options =>
         }));
 });
 
+// Общий фильтр проверяет токен у изменяющих запросов; открытие страницы GET не блокируется.
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
+    // Сначала создаём пустую базу и вписываем своё подключение в User Secrets проекта ShoeStore.
+    // В консоли NuGet: Update-Database -Project ShoeStore -StartupProject ShoeStore -Args '--environment Development'
+    // В терминале: dotnet tool restore, затем dotnet ef database update --project ShoeStore.csproj -- --environment Development
+    // При запуске таблицы не создаём. Ниже добавляется роль в уже подготовленную базу.
+
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     if (!await roles.RoleExistsAsync("Customer"))
     {
@@ -86,6 +102,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Вне Development скрываем подробности исключений за общей страницей ошибки.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -94,6 +111,7 @@ if (!app.Environment.IsDevelopment())
 
 app.Use(async (context, next) =>
 {
+    // Заголовки добавляем перед отправкой ответа: к этому моменту уже известен пользователь.
     context.Response.OnStarting(() =>
     {
         var headers = context.Response.Headers;
@@ -102,6 +120,7 @@ app.Use(async (context, next) =>
         headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
         headers["Content-Security-Policy"] = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'";
+        // Страницы аккаунта не должны оставаться в кеше браузера после выхода.
         if (context.User.Identity?.IsAuthenticated == true || context.Request.Path.StartsWithSegments("/Account"))
             headers.CacheControl = "no-store, max-age=0";
         return Task.CompletedTask;
@@ -109,6 +128,8 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseStaticFiles();
+// Сначала выбираем маршрут и проверяем лимиты, затем Identity читает cookie.
+// Только после этого можно решать, разрешён ли доступ к выбранному действию.
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();

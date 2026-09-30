@@ -2,11 +2,22 @@
   <PropertyGroup>
     <AssemblyName>ShoeStore</AssemblyName>
     <RootNamespace>ShoeStore</RootNamespace>
-    <UserSecretsId>ShoeStore-Registration-Migrations-Local-Development</UserSecretsId>
+    <UserSecretsId>ShoeStore2-Registration-Local-Development</UserSecretsId>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Tests\**\*.cs" />
+    <Compile Remove="ShoeStore.Models\**\*.cs" />
+    <Content Remove="Tests\**" />
+    <Content Remove="ShoeStore.Models\**" />
+    <None Remove="Tests\**" />
+    <None Remove="ShoeStore.Models\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ShoeStore.Models\ShoeStore.Models.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">

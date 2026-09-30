@@ -1,11 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
 
 namespace ShoeStore.Models;
 
-public class ApplicationUser : IdentityUser
-{
-}
 
 public class RegisterViewModel
 {

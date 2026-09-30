@@ -40,7 +40,7 @@ public class TRegisterIntegration
     {
         if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable(PostgreSqlFixture.ConnectionVariable)))
             // Inconclusive отмечает тест как пропущенный: условия для его выполнения не настроены.
-            Assert.Inconclusive("Для проверки PostgreSQL задайте SHOESTORE_TEST_POSTGRES. Инструкция: Tests/README.md.");
+            Assert.Inconclusive("Для проверки PostgreSQL задайте переменную SHOESTORE_TEST_POSTGRES со строкой подключения к тестовому серверу.");
     }
 
     // После тестов класса освобождаем приложение и удаляем только созданную ими временную БД.

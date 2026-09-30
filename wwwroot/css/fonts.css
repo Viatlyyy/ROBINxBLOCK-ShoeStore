@@ -1,3 +1,4 @@
+/* unicode-range выбирает файл шрифта под символы текста; оба файла без необходимости не загружаются. */
 @font-face {
   font-family: Inter;
   font-style: normal;

@@ -200,3 +200,24 @@ CREATE INDEX order_status_history_order_index
     ON order_status_history (order_id, changed_at DESC);
 
 COMMIT;
+
+Подключение к локальной базе данных PostgreSQL
+
+Создайте пустую базу shoestore_test в PostgreSQL.
+В Visual Studio откройте «Управление секретами пользователя» для проекта ShoeStore
+и добавьте строку подключения в JSON:
+
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=shoestore_test;Username=postgres;Password=ВАШ_ПАРОЛЬ"
+  }
+}
+
+Замените название базы, имя пользователя и ВАШ_ПАРОЛЬ на свои значения.
+Сохраните файл секретов пользователя.
+
+В консоли диспетчера пакетов NuGet выберите проект ShoeStore и выполните:
+
+Update-Database -Args '--environment Development'
+
+После создания таблиц запустите проект через F5.

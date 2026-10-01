@@ -19,7 +19,4 @@
     <ProjectReference Include="..\..\ShoeStore.Models\ShoeStore.Models.csproj" />
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\Database\shoestore-schema.sql" Link="Database\shoestore-schema.sql" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
 </Project>

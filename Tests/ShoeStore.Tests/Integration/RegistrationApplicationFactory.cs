@@ -38,7 +38,7 @@ public sealed class RegistrationApplicationFactory(string connectionString) : We
         });
     }
 
-    private static string FindProjectDirectory()
+    internal static string FindProjectDirectory()
     {
         // Начинаем с папки запущенных тестов (bin/Debug/...) и поднимаемся к родительским папкам.
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory);

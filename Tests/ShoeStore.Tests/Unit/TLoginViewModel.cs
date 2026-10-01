@@ -3,8 +3,7 @@ using ShoeStore.Models;
 
 namespace ShoeStore.Tests.Unit;
 
-// Проверяем правила самой формы. Validator читает атрибуты модели, сервер и PostgreSQL не нужны.
-// Если убрать обязательность поля или ограничение длины, соответствующая проверка должна упасть.
+
 [TestClass]
 public class TLoginViewModel
 {
@@ -15,7 +14,7 @@ public class TLoginViewModel
         var model = new LoginViewModel { Email = "user@example.com", Password = "Password1!" };
         var errors = new List<ValidationResult>();
 
-        // В тесте MVC не участвует, поэтому проверяем модель явно.
+        // В тесте MVC не участвует, поэтому проверяем модель.
         // Последний true включает все атрибуты свойств, в том числе EmailAddress и StringLength.
         var result = Validator.TryValidateObject(model, new ValidationContext(model), errors, true);
 
@@ -37,7 +36,7 @@ public class TLoginViewModel
         var model = new LoginViewModel { Email = email, Password = "Password1!" };
         var errors = new List<ValidationResult>();
 
-        // В тесте MVC не участвует, поэтому проверяем модель явно.
+        // Проверяем поля модели вручную, потому что в тесте форма не отправляется.
         // Последний true включает все атрибуты свойств, в том числе EmailAddress и StringLength.
         var result = Validator.TryValidateObject(model, new ValidationContext(model), errors, true);
 
@@ -56,7 +55,7 @@ public class TLoginViewModel
         var model = new LoginViewModel { Email = "user@example.com", Password = password };
         var errors = new List<ValidationResult>();
 
-        // В тесте MVC не участвует, поэтому проверяем модель явно.
+        // Проверяем поля модели вручную, потому что в тесте форма не отправляется.
         // Последний true включает все атрибуты свойств, в том числе EmailAddress и StringLength.
         var result = Validator.TryValidateObject(model, new ValidationContext(model), errors, true);
 

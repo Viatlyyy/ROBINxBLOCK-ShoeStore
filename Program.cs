@@ -6,8 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.Data;
 using ShoeStore.Models;
 
-// В Development автоматически загружаются User Secrets проекта ShoeStore.
-// Подключение задаём там: у каждого своя база, и пароль не попадает в Git.
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>

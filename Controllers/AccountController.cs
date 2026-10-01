@@ -31,48 +31,61 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
         // false — без постоянной cookie, true — неверный пароль учитывается для блокировки.
         // Проверку хеша оставляем Identity, вручную пароль с данными из базы не сравниваем.
         var result = await signIn.PasswordSignInAsync(user, vm.Password, false, true);
+        // После успешного входа открываем главную страницу.
         if (result.Succeeded)
             return RedirectToAction("Index", "Home");
 
+        // При неудачном входе показываем причину ошибки в форме.
         ModelState.AddModelError("", result.IsLockedOut
             ? "Слишком много неудачных попыток. Повторите вход через 15 минут."
             : "Неверный пароль.");
         return View(vm);
     }
 
+    // Показываем форму регистрации.
     public IActionResult Register() => View();
 
+    // Обрабатываем данные отправленной формы.
     [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("authentication")]
     public async Task<IActionResult> Register(RegisterViewModel vm)
     {
+        // Если поля заполнены неправильно, возвращаем форму с ошибками.
         if (!ModelState.IsValid) return View(vm);
 
+        // Убираем лишние пробелы по краям email и имени.
         var email = vm.Email.Trim();
         var firstName = vm.FirstName.Trim();
         var user = new ApplicationUser { UserName = email, Email = email };
+        // Identity создаёт аккаунт и сохраняет хеш пароля.
         var result = await users.CreateAsync(user, vm.Password);
         if (result.Succeeded)
         {
+            // Назначаем новому пользователю роль покупателя.
             var roleResult = await users.AddToRoleAsync(user, "Customer");
             if (!roleResult.Succeeded)
             {
+                // Если роль не назначена, удаляем созданный аккаунт и показываем ошибки.
                 await users.DeleteAsync(user);
                 AddIdentityErrors(roleResult);
                 return View(vm);
             }
 
+            // Сохраняем имя в дополнительных данных пользователя (claim).
             var nameResult = await users.AddClaimAsync(user, new Claim(ClaimTypes.GivenName, firstName));
             if (!nameResult.Succeeded)
             {
+                // Если имя не сохранилось, удаляем созданный аккаунт и показываем ошибки.
                 await users.DeleteAsync(user);
                 AddIdentityErrors(nameResult);
                 return View(vm);
             }
 
+            // Передаём сообщение об успехе и снова открываем форму регистрации.
             TempData["Message"] = "Регистрация успешно завершена.";
             return RedirectToAction(nameof(Register));
         }
 
+        // Если аккаунт не создан, возвращаем форму с ошибками Identity.
         AddIdentityErrors(result);
         return View(vm);
     }
@@ -85,12 +98,14 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
         return RedirectToAction("Index", "Home");
     }
 
+    // Добавляем ошибки Identity в форму, чтобы пользователь их увидел.
     private void AddIdentityErrors(IdentityResult result)
     {
         foreach (var error in result.Errors)
             ModelState.AddModelError("", RussianIdentityError(error.Code));
     }
 
+    // По коду ошибки выбираем сообщение на русском языке.
     private static string RussianIdentityError(string code) => code switch
     {
         "ConcurrencyFailure" => "Не удалось сохранить изменения: данные были изменены другим пользователем. Обновите страницу и повторите попытку.",

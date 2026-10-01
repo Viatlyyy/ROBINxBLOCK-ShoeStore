@@ -7,7 +7,6 @@ using ShoeStore.Models;
 
 namespace ShoeStore.Tests.Mocks;
 
-// Контроллер настоящий, его зависимости заменены моками.
 // Проверяем решения контроллера и сообщения формы; работу PostgreSQL и алгоритм хеширования здесь не запускаем.
 [TestClass]
 public class TAccountController
@@ -21,7 +20,7 @@ public class TAccountController
     [TestInitialize]
     public void Setup()
     {
-        // Конструкторы менеджеров требуют зависимости даже при использовании Moq.
+
         // Хранилище и HTTP-контекст подменяем; остальные параметры не используются замоканными методами.
         users = new Mock<UserManager<ApplicationUser>>(
             Mock.Of<IUserStore<ApplicationUser>>(), null!, null!, null!, null!, null!, null!, null!, null!);

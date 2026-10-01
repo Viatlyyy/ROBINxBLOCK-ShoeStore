@@ -2,31 +2,24 @@
   <PropertyGroup>
     <AssemblyName>ShoeStore</AssemblyName>
     <RootNamespace>ShoeStore</RootNamespace>
-    <!-- Этот ID связывает проект с локальным secrets.json; сам файл в репозиторий не входит. -->
-    <UserSecretsId>ShoeStore2-Authorization-Local-Development</UserSecretsId>
-    <TargetFramework>net10.0</TargetFramework>
+    <UserSecretsId>ShoeStore2-Registration-Local-Development</UserSecretsId>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Web SDK подхватывает вложенные папки. Исключаем чужие исходники и артефакты, чтобы не собирать их дважды. -->
-    <Compile Remove="ShoeStore.Tests/**/*.cs;ShoeStore.Library/**/*.cs" />
-    <Content Remove="ShoeStore.Tests/**;ShoeStore.Library/**" />
-    <None Remove="ShoeStore.Tests/**;ShoeStore.Library/**" />
+    <Compile Remove="Tests\**\*.cs" />
+    <Compile Remove="ShoeStore.Models\**\*.cs" />
+    <Content Remove="Tests\**" />
+    <Content Remove="ShoeStore.Models\**" />
+    <None Remove="Tests\**" />
+    <None Remove="ShoeStore.Models\**" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Приложение использует те же модели из библиотеки, которые проверяют тесты. -->
-    <ProjectReference Include="ShoeStore.Library/ShoeStore.Library.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <!-- Для Update-Database в консоли NuGet Visual Studio. PrivateAssets не передаёт инструменты другим проектам. -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <ProjectReference Include="ShoeStore.Models\ShoeStore.Models.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.19" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
   </ItemGroup>
 </Project>

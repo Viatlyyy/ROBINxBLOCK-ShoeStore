@@ -88,11 +88,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    // Сначала создаём пустую базу и вписываем своё подключение в User Secrets проекта ShoeStore.
-    // В консоли NuGet: Update-Database -Project ShoeStore -StartupProject ShoeStore -Args '--environment Development'
-    // В терминале: dotnet tool restore, затем dotnet ef database update --project ShoeStore.csproj -- --environment Development
-    // При запуске таблицы не создаём. Ниже добавляется роль в уже подготовленную базу.
-
+    // Таблицы заранее импортируются из Database/shoestore-schema.sql в отдельную локальную БД.
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     if (!await roles.RoleExistsAsync("Customer"))
     {

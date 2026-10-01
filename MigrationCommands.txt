@@ -1,7 +1,0 @@
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=ИМЯ_БАЗЫ;Username=ЛОГИН;Password=ПАРОЛЬ"
-  }
-}
-
-Update-Database -Project ShoeStore -StartupProject ShoeStore -Args '--environment Development'

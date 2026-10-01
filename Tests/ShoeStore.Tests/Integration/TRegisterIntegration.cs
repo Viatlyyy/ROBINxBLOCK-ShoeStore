@@ -73,6 +73,15 @@ public class TRegisterIntegration
         // Отдельная область служб даёт контекст БД того же тестового приложения.
         using var scope = fixture.Factory.Services.CreateScope();
         var database = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        // Используем полную схему магазина, импортированную из SQL, а не только таблицы аккаунтов.
+        await database.Database.OpenConnectionAsync();
+        await using (var schema = database.Database.GetDbConnection().CreateCommand())
+        {
+            schema.CommandText = "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'";
+            Assert.AreEqual(17L, Convert.ToInt64(await schema.ExecuteScalarAsync()));
+            schema.CommandText = "SELECT to_regclass('public.\"__EFMigrationsHistory\"') IS NULL";
+            Assert.AreEqual(true, await schema.ExecuteScalarAsync());
+        }
         // SingleAsync требует ровно одну запись с этим e-mail и читает её из PostgreSQL.
         var user = await database.Users.SingleAsync(user => user.Email == email);
         Assert.AreEqual(email, user.UserName);

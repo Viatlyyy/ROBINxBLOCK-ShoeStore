@@ -1,7 +1,5 @@
 using System.Text.RegularExpressions;
-using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using ShoeStore.Data;
 
 namespace ShoeStore.Tests.Integration;
 
@@ -45,12 +43,16 @@ public sealed class PostgreSqlFixture
             databaseCreated = true;
             // Все дальнейшие операции с таблицами направляем только в созданную временную БД.
             connection.Database = databaseName;
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseNpgsql(connection.ConnectionString).Options;
-            // await using освобождает контекст асинхронно; EnsureCreated создаёт таблицы по модели.
-
-            await using (var database = new ApplicationDbContext(options))
-                await database.Database.EnsureCreatedAsync();
+            // Импортируем тот же SQL-файл, который другой пользователь применяет через pgAdmin.
+            // SQL выполняется только в нашей новой временной БД, не в существующей базе магазина.
+            var schemaPath = Path.Combine(AppContext.BaseDirectory, "Database", "shoestore-schema.sql");
+            var schema = await File.ReadAllTextAsync(schemaPath);
+            await using (var database = new NpgsqlConnection(connection.ConnectionString))
+            {
+                await database.OpenAsync();
+                await using var command = new NpgsqlCommand(schema, database);
+                await command.ExecuteNonQueryAsync();
+            }
 
             // Передаём временное подключение фабрике тестового приложения.
             Factory = new RegistrationApplicationFactory(connection.ConnectionString);

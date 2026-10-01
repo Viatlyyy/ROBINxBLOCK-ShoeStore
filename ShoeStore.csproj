@@ -16,6 +16,12 @@
     <None Remove="ShoeStore.Models\**" />
     <Content Remove="**\TestResults\**" />
     <None Remove="**\TestResults\**" />
+    <Content Remove="Database\**" />
+    <None Remove="Database\**" />
+    <Content Remove="message.txt" />
+    <None Remove="message.txt" />
+    <Content Remove="**\*.docx" />
+    <None Remove="**\*.docx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ShoeStore.Models\ShoeStore.Models.csproj" />

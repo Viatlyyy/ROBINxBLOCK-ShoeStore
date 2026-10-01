@@ -45,7 +45,7 @@ public sealed class PostgreSqlFixture
             connection.Database = databaseName;
             // Импортируем тот же SQL-файл, который другой пользователь применяет через pgAdmin.
             // SQL выполняется только в нашей новой временной БД, не в существующей базе магазина.
-            // Схема хранится только в основном приложении; в проект тестов её не добавляем.
+            // SQL — общий файл репозитория; в проекты приложения и тестов его не включаем.
             var schemaPath = Path.Combine(RegistrationApplicationFactory.FindProjectDirectory(),
                 "Database", "shoestore-schema.sql");
             var schema = await File.ReadAllTextAsync(schemaPath);

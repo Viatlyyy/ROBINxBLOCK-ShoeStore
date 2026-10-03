@@ -1,3 +1,10 @@
+@{
+  var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+  var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+  // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
+  var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
+    && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
+}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,15 +14,45 @@
   <link rel="preload" href="~/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-  <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
+  @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
 </head>
 <body class="is-page-entering">
   <header class="header">
-    <a class="logo" asp-controller="Account" asp-action="Register">RONIN<span>xBLOCK</span></a>
+    <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
+    <nav>
+      <a href="#" aria-disabled="true">Каталог</a>
+      <a href="#" aria-disabled="true">Новинки</a>
+      <a href="#" aria-disabled="true">Хиты</a>
+    </nav>
+    <div class="header-actions">
+      @if (User.Identity?.IsAuthenticated == true)
+      {
+        // Имя пришло из claim при регистрации. Для аккаунтов без имени используем запасной вариант.
+        var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value;
+        displayName = string.IsNullOrWhiteSpace(displayName) ? "Пользователь" : displayName.Trim();
+        var avatarLetter = displayName[..1].ToUpperInvariant();
+        <div class="account-menu" data-account-menu>
+          <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>@avatarLetter</button>
+          <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
+            <p class="account-menu__email">@displayName</p>
+            @* Form Tag Helper добавит токен для POST-выхода; ссылка GET сессию не завершает. *@
+            <form asp-controller="Account" asp-action="Logout" method="post">
+              <button type="submit" role="menuitem">Выйти</button>
+            </form>
+          </div>
+        </div>
+      }
+      else
+      {
+        <a asp-controller="Account" asp-action="Login">Войти</a>
+      }
+    </div>
   </header>
   <main>@RenderBody()</main>
-  <script src="~/js/account-form.js" asp-append-version="true"></script>
+  @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
+  @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
 </body>
 </html>

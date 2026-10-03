@@ -5,6 +5,7 @@
 .account-breadcrumb span { margin: 0 9px; color: #c8c8c8; }
 .account-page > h1 { margin: 0 0 25px; font-size: 42px; letter-spacing: -2.2px; }
 .account-page__lead { margin: -8px 0 27px; color: #727272; font-size: 12px; line-height: 1.55; }
+/* Форма и карточка делят ширину. minmax(0, ...) позволяет колонке формы сжиматься без переполнения. */
 .account-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(360px,1fr); gap: 17px; max-width: 1140px; }
 .account-form-card, .account-benefit-card { min-height: 505px; overflow: hidden; border: 1px solid #e7e7e7; border-radius: 4px; background: #fff; }
 .account-form-card { padding: 37px 35px 27px; animation: account-card-in .64s cubic-bezier(.16,1,.3,1) both; }
@@ -34,8 +35,8 @@
 .account-separator { display: flex; align-items: center; gap: 9px; margin: 24px 0; color: #a3a3a3; font-size: 9px; text-align: center; }
 .account-separator::before, .account-separator::after { flex: 1; height: 1px; content: ''; background: #ececec; }
 .account-terms { margin: 0; color: #888; font-size: 9px; line-height: 1.5; }
-.account-validation { margin: 0 0 15px; color: #b40000; font-size: 10px; }
 .account-success { margin: 0 0 15px; color: #176b32; font-size: 11px; font-weight: 600; }
+.account-validation { margin: 0 0 15px; color: #b40000; font-size: 10px; }
 .account-form-card--register { min-height: 0; padding-bottom: 23px; }
 .account-form-card--register .account-submit { margin-top: 20px; }
 .account-benefit-card { animation: account-card-in .7s .13s cubic-bezier(.16,1,.3,1) both; }
@@ -55,13 +56,14 @@
 .account-benefit-card--register .account-benefit-card__content { padding-top: 24px; }
 .account-benefit-card--register .account-benefit-card__content h2 { margin-bottom: 18px; }
 .account-benefit-card--register .account-benefit-card__content ul { gap: 16px; }
-.account-benefits { display: grid; grid-template-columns: repeat(4,1fr); max-width: 1200px; margin: 27px auto 0; padding: 24px 5.2%; border-top: 1px solid #ececec; }
+.account-benefits { display: grid; grid-template-columns: repeat(4,1fr); max-width: 1200px; margin: 27px auto 0; padding: 26px 5.2%; border-top: 1px solid #ececec; }
 .account-benefits > div { display: flex; align-items: center; justify-content: center; gap: 12px; }
-.account-benefits > div > span { font-size: 21px; }
-.account-benefits p { margin: 0; font-size: 9px; }
+.account-benefits > div > span { font-size: 23px; }
+.account-benefits p { margin: 0; font-size: 10px; }
 .account-benefits b, .account-benefits small { display: block; }
-.account-benefits small { margin-top: 4px; color: #999; font-size: 8px; }
+.account-benefits small { margin-top: 4px; color: #999; font-size: 9px; }
 @keyframes account-card-in { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .account-form-card, .account-benefit-card { animation-duration: .7s !important; } .account-benefit-card > img { transition-duration: .7s !important; } }
+/* На узком экране колонки идут друг под другом, у изображения своя высота. */
 @media (max-width: 720px) { .account-layout { grid-template-columns: 1fr; } .account-benefit-card { min-height: 0; } .account-benefit-card > img { height: 210px; } .account-benefits { grid-template-columns: 1fr 1fr; gap: 20px 8px; padding-inline: 20px; } .account-benefits > div { justify-content: flex-start; } }
 @media (max-width: 440px) { .account-page { padding: 21px 20px 0; } .account-page > h1 { font-size: 28px; } .account-form-card { padding: 24px 18px; } .account-form-grid { grid-template-columns: 1fr; gap: 0; } .account-benefit-card__content { padding: 21px 18px; } }

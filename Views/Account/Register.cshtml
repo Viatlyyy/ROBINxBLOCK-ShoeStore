@@ -2,7 +2,7 @@
 @{ ViewData["Title"] = "Регистрация"; }
 
 <section class="account-page account-page--register">
-  <p class="account-breadcrumb">Регистрация</p>
+  <p class="account-breadcrumb"><a asp-controller="Home" asp-action="Index">Главная</a><span>/</span> Регистрация</p>
   <h1>Создание аккаунта</h1>
   <p class="account-page__lead">Создайте аккаунт, сохраняйте избранное, отслеживайте заказы<br />и получайте доступ к эксклюзивным предложениям.</p>
   @if (TempData["Message"] is string message)

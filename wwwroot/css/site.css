@@ -1,0 +1,11 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #fff; color: #101010; font: 12px Inter, Arial, sans-serif; }
+a { color: inherit; text-decoration: none; }
+.header { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; height: 70px; padding: 0 4.5%; border-bottom: 1px solid #f0f0f0; background: #fff; }
+.logo { font-size: 19px; font-weight: 800; letter-spacing: -1.2px; }
+.logo span { color: #8f8f8f; }
+.header nav, .header-actions { display: flex; gap: 25px; align-items: center; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.button { display: inline-flex; align-items: center; gap: 20px; padding: 14px 18px; border: 1px solid #111; background: #111; color: #fff; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.auth-home { min-height: calc(100vh - 70px); padding: 80px 5.2%; }
+.auth-home h1 { margin: 0; font-size: 42px; letter-spacing: -2.2px; }
+@media (max-width: 760px) { .header { padding: 0 20px; } .header nav { display: none; } }

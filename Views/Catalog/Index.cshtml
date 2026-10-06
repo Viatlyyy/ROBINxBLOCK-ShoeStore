@@ -1,0 +1,14 @@
+@model ShoeStore.Models.CatalogPageViewModel
+@{ ViewData["Title"] = "Каталог"; }
+<section class="content catalog" aria-label="Каталог товаров">
+  <div class="grid">@foreach (var product in Model.Products) { <partial name="_ProductCard" model="product" /> }</div>
+  @if (Model.TotalPages > 1)
+  {
+    <nav class="catalog-pagination" aria-label="Страницы каталога">
+      @for (var number = 1; number <= Model.TotalPages; number++)
+      {
+        <a class="@(number == Model.Page ? "is-active" : "")" asp-route-page="@number" aria-current="@(number == Model.Page ? "page" : null)">@number</a>
+      }
+    </nav>
+  }
+</section>

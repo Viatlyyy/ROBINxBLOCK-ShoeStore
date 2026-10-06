@@ -1,0 +1,24 @@
+/* Avoid permanent compositor layers. Web Animations allocates them only for
+   the short lifetime of an actual image transition. */
+.product,
+.product img {
+  will-change: auto;
+}
+
+/* Below-the-fold sections are skipped until they approach the viewport while
+   retaining stable intrinsic space and therefore avoiding layout shifts. */
+.home-culture,
+.edit-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* The storefront deliberately keeps its branded interaction motion even when
+   the operating system disables optional UI motion. */
+@media (prefers-reduced-motion: reduce) {
+  .product { transition-duration: .28s !important; }
+  .product img { transition-duration: .38s !important; }
+  .button,
+  .light-button,
+  .header a { transition-duration: .2s !important; }
+}

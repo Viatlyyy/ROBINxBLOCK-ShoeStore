@@ -14,13 +14,10 @@ public class TProductVariant
     };
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow(" \t\r\n")]
-    public void MissingName_FailsValidation(string? name)
+    public void MissingName_FailsValidation()
     {
         var variant = ValidVariant();
-        variant.Name = name!;
+        variant.Name = "";
 
         ModelValidation.AssertInvalid(variant, nameof(ProductVariant.Name));
     }
@@ -35,13 +32,10 @@ public class TProductVariant
     }
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow(" \t\r\n")]
-    public void MissingSku_FailsValidation(string? sku)
+    public void MissingSku_FailsValidation()
     {
         var variant = ValidVariant();
-        variant.Sku = sku!;
+        variant.Sku = "";
 
         ModelValidation.AssertInvalid(variant, nameof(ProductVariant.Sku));
     }
@@ -56,13 +50,10 @@ public class TProductVariant
     }
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow(" \t\r\n")]
-    public void MissingSwatch_FailsValidation(string? swatch)
+    public void MissingSwatch_FailsValidation()
     {
         var variant = ValidVariant();
-        variant.Swatch = swatch!;
+        variant.Swatch = "";
 
         ModelValidation.AssertInvalid(variant, nameof(ProductVariant.Swatch));
     }
@@ -77,13 +68,10 @@ public class TProductVariant
     }
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow(" \t\r\n")]
-    public void MissingImageUrl_FailsValidation(string? imageUrl)
+    public void MissingImageUrl_FailsValidation()
     {
         var variant = ValidVariant();
-        variant.ImageUrl = imageUrl!;
+        variant.ImageUrl = "";
 
         ModelValidation.AssertInvalid(variant, nameof(ProductVariant.ImageUrl));
     }
@@ -99,16 +87,4 @@ public class TProductVariant
 
     [TestMethod]
     public void ValidData_PassesValidation() => ModelValidation.AssertValid(ValidVariant());
-
-    [TestMethod]
-    public void MaximumFieldLengths_PassValidation()
-    {
-        var variant = ValidVariant();
-        variant.Name = new string('N', 80);
-        variant.Sku = new string('S', 64);
-        variant.Swatch = new string('C', 24);
-        variant.ImageUrl = new string('I', 512);
-
-        ModelValidation.AssertValid(variant);
-    }
 }

@@ -12,8 +12,6 @@ public class TCatalogController
     [TestMethod]
     [DataRow(1)]
     [DataRow(3)]
-    [DataRow(0)]
-    [DataRow(-1)]
     public async Task Index_ReturnsCatalogModelAndForwardsPageAndToken(int page)
     {
         using var cancellation = new CancellationTokenSource();

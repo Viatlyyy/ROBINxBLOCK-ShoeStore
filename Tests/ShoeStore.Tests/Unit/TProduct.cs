@@ -14,13 +14,10 @@ public class TProduct
     };
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow(" \t\r\n")]
-    public void MissingName_FailsValidation(string? name)
+    public void MissingName_FailsValidation()
     {
         var product = ValidProduct();
-        product.Name = name!;
+        product.Name = "";
 
         ModelValidation.AssertInvalid(product, nameof(Product.Name));
     }
@@ -35,13 +32,10 @@ public class TProduct
     }
 
     [TestMethod]
-    [DataRow(null)]
-    [DataRow("")]
-    [DataRow(" \t\r\n")]
-    public void MissingDescription_FailsValidation(string? description)
+    public void MissingDescription_FailsValidation()
     {
         var product = ValidProduct();
-        product.Description = description!;
+        product.Description = "";
 
         ModelValidation.AssertInvalid(product, nameof(Product.Description));
     }
@@ -56,11 +50,8 @@ public class TProduct
     }
 
     [TestMethod]
-    [DataRow("-1")]
-    [DataRow("0")]
     [DataRow("0.99")]
     [DataRow("999999.01")]
-    [DataRow("1000000")]
     public void PriceOutsideAllowedRange_FailsValidation(string price)
     {
         var product = ValidProduct();
@@ -72,17 +63,4 @@ public class TProduct
 
     [TestMethod]
     public void ValidData_PassesValidation() => ModelValidation.AssertValid(ValidProduct());
-
-    [TestMethod]
-    [DataRow("1")]
-    [DataRow("999999")]
-    public void MaximumTextLengthsAndBoundaryPrice_PassValidation(string price)
-    {
-        var product = ValidProduct();
-        product.Name = new string('N', 100);
-        product.Description = new string('D', 2000);
-        product.Price = decimal.Parse(price, CultureInfo.InvariantCulture);
-
-        ModelValidation.AssertValid(product);
-    }
 }

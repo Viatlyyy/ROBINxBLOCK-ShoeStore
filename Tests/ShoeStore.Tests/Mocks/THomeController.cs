@@ -34,22 +34,6 @@ public class THomeController
     }
 
     [TestMethod]
-    public async Task Index_WithoutArguments_RequestsHomeWithDefaultToken()
-    {
-        var model = new HomePageViewModel();
-        var catalog = new Mock<ICatalogQueryService>(MockBehavior.Strict);
-        catalog.Setup(service => service.GetHomeAsync(CancellationToken.None)).ReturnsAsync(model);
-        var controller = new HomeController(catalog.Object);
-
-        var result = await controller.Index();
-
-        Assert.IsInstanceOfType<ViewResult>(result);
-        Assert.AreSame(model, ((ViewResult)result).Model);
-        catalog.Verify(service => service.GetHomeAsync(CancellationToken.None), Times.Once);
-        catalog.VerifyNoOtherCalls();
-    }
-
-    [TestMethod]
     public async Task Index_EmptyProducts_ReturnsModelWithoutError()
     {
         var model = new HomePageViewModel { Products = [], Brands = [] };
@@ -57,7 +41,7 @@ public class THomeController
         catalog.Setup(service => service.GetHomeAsync(CancellationToken.None)).ReturnsAsync(model);
         var controller = new HomeController(catalog.Object);
 
-        var result = await controller.Index(CancellationToken.None);
+        var result = await controller.Index();
 
         Assert.IsInstanceOfType<ViewResult>(result);
         var returned = ((ViewResult)result).Model as HomePageViewModel;

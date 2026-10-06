@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Data;
 using ShoeStore.Models;
+using ShoeStore.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -81,13 +82,14 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Общий фильтр проверяет токен у изменяющих запросов; открытие страницы GET не блокируется.
+builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    // Таблицы заранее импортируются из Database/shoestore-schema.sql в отдельную локальную БД.
+    // Таблицы Identity должны быть заранее созданы в настроенной базе данных.
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     if (!await roles.RoleExistsAsync("Customer"))
     {

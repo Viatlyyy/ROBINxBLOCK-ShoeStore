@@ -1,6 +1,9 @@
 @{
   var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+  var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
+    && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
+  var usesProductCards = isHome || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase);
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
@@ -12,19 +15,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>@ViewData["Title"] — RONINxBLOCK</title>
   <link rel="preload" href="~/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+  @if (isHome)
+  {
+    <link rel="preload" as="image" href="/images/hero/9060-urban-feet-v6-960.webp" imagesrcset="/images/hero/9060-urban-feet-v6-960.webp 960w, /images/hero/9060-urban-feet-v6-1600.webp 1600w" imagesizes="100vw" fetchpriority="high" />
+  }
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+  @if (usesProductCards) { <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
+  @if (isHome)
+  {
+    <link rel="stylesheet" href="~/css/brand-ticker.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/feature-tiles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/culture-board.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
+  }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
 </head>
 <body class="is-page-entering">
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
     <nav>
-      <a href="#" aria-disabled="true">Каталог</a>
-      <a href="#" aria-disabled="true">Новинки</a>
-      <a href="#" aria-disabled="true">Хиты</a>
+      <a asp-controller="Catalog" asp-action="Index">Каталог</a>
+      <a asp-controller="Home" asp-action="Index" asp-fragment="new">Новинки</a>
+      <a asp-controller="Home" asp-action="Index" asp-fragment="popular">Хиты</a>
     </nav>
     <div class="header-actions">
       @if (User.Identity?.IsAuthenticated == true)
@@ -51,6 +67,14 @@
     </div>
   </header>
   <main>@RenderBody()</main>
+  <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>
+  @if (usesProductCards) { <script src="~/js/site.js" asp-append-version="true"></script> }
+  @if (isHome)
+  {
+    <script src="~/js/hero-carousel.js" asp-append-version="true"></script>
+    <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
+    <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
+  }
   @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
   @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>

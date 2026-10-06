@@ -11,6 +11,9 @@
     <Compile Remove="ShoeStore.Models\**\*.cs" />
     <Content Remove="ShoeStore.Models\**" />
     <None Remove="ShoeStore.Models\**" />
+    <Compile Remove="Tests\**\*.cs" />
+    <Content Remove="Tests\**" />
+    <None Remove="Tests\**" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ShoeStore.Models\ShoeStore.Models.csproj" />

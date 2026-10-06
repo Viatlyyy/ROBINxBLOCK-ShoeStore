@@ -49,6 +49,14 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
         };
     }
 
+    public async Task<Product?> GetProductDetailsAsync(int id, CancellationToken cancellationToken) =>
+        await db.Products.AsNoTracking()
+            .Include(product => product.Brand)
+            .Include(product => product.Variants).ThenInclude(variant => variant.Sizes)
+            .Include(product => product.Variants).ThenInclude(variant => variant.GalleryImages)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(product => product.Id == id && product.Status == ProductStatus.Active, cancellationToken);
+
     private IQueryable<ProductCardViewModel> CardQuery() => ToCards(
         db.Products.AsNoTracking().Where(product => product.Status == ProductStatus.Active));
 

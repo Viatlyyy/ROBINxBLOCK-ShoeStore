@@ -1,0 +1,95 @@
+@model ShoeStore.Models.Product
+@{
+  ViewData["Title"] = $"{Model.Brand.Name} {Model.Name}";
+  const string ImageRevision = "20260913-3xl-reframe";
+  string VersionedImageUrl(string imageUrl) => $"{imageUrl}{(imageUrl.Contains('?') ? '&' : '?')}v={ImageRevision}";
+  string OptimizedGalleryUrl(string imageUrl) => imageUrl.StartsWith("/images/gallery/", StringComparison.OrdinalIgnoreCase)
+    && imageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+      ? $"/images/gallery/optimized/{System.IO.Path.GetFileNameWithoutExtension(imageUrl)}.jpg"
+      : imageUrl;
+  var variants = Model.Variants.OrderByDescending(v => v.IsDefault).ToList();
+  var selected = variants.FirstOrDefault();
+  var galleryByVariant = variants.ToDictionary(
+    variant => variant.Id,
+    variant => new[] { (Url: variant.ImageUrl, Thumbnail: variant.ThumbnailUrl ?? variant.ImageUrl) }
+      .Concat(variant.GalleryImages.OrderBy(image => image.SortOrder).Select(image => (Url: OptimizedGalleryUrl(image.ImageUrl), Thumbnail: image.ThumbnailUrl ?? ThumbnailUrl(image.ImageUrl))))
+      .Where(image => !string.IsNullOrWhiteSpace(image.Url))
+      .GroupBy(image => image.Url, StringComparer.OrdinalIgnoreCase)
+      .Select(group => group.First())
+      .ToList());
+  string ThumbnailUrl(string imageUrl) => imageUrl.StartsWith("/images/gallery/", StringComparison.OrdinalIgnoreCase)
+    ? $"/images/gallery/thumbs/{System.IO.Path.GetFileNameWithoutExtension(imageUrl)}.jpg"
+    : imageUrl;
+  var initialImages = selected is not null && galleryByVariant.TryGetValue(selected.Id, out var images) ? images : [];
+  var initialImage = VersionedImageUrl(initialImages.FirstOrDefault().Url ?? Model.ImageUrl ?? "");
+}
+
+<section class="details content">
+  <div class="detail-gallery" data-product-gallery>
+    <div class="detail-image" role="group" aria-label="Галерея фотографий @Model.Brand.Name @Model.Name">
+      <img src="@initialImage" alt="@Model.Brand.Name @Model.Name" data-variant-image data-gallery-main decoding="async" draggable="false" />
+      <img class="gallery-image-buffer" alt="" data-gallery-buffer aria-hidden="true" draggable="false" />
+      <button class="gallery-control gallery-control--previous" type="button" data-gallery-previous aria-label="Предыдущее фото" hidden>←</button>
+      <button class="gallery-control gallery-control--next" type="button" data-gallery-next aria-label="Следующее фото" hidden>→</button>
+      <span class="gallery-counter" data-gallery-counter aria-live="polite">1 / @Math.Max(1, initialImages.Count)</span>
+    </div>
+    <div class="gallery-thumbnails" aria-label="Фотографии модели">
+      @foreach (var variant in variants)
+      {
+        var variantImages = galleryByVariant[variant.Id];
+        <div class="gallery-thumbnails__group" data-gallery-images="@variant.Id" hidden="@(variant.Id != selected?.Id)">
+          @for (var imageIndex = 0; imageIndex < variantImages.Count; imageIndex++)
+          {
+            var galleryImage = variantImages[imageIndex];
+            <button class="gallery-thumbnail @(variant.Id == selected?.Id && imageIndex == 0 ? "is-active" : "")" type="button" data-gallery-image data-gallery-source="@VersionedImageUrl(galleryImage.Url)" aria-label="Фото @(imageIndex + 1) расцветки @variant.Name" aria-pressed="@(variant.Id == selected?.Id && imageIndex == 0 ? "true" : "false")">
+              <img src="@galleryImage.Thumbnail" alt="" width="65" height="65" loading="lazy" decoding="async" fetchpriority="low" />
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div>
+    <p class="eyebrow">@Model.Brand.Name</p>
+    <h1>@Model.Name</h1>
+    <p class="color detail-color">Цвет: <b data-variant-label>@(selected?.Name ?? "—")</b></p>
+    @if (variants.Count > 1)
+    {
+      <div class="detail-variant-picker" aria-label="Выберите расцветку">
+        <span>Расцветка</span>
+        <div class="variant-picker">
+          @foreach (var variant in variants)
+          {
+            <button type="button" class="color-swatch @(variant.IsDefault ? "is-selected" : "")" style="--swatch:@variant.Swatch" title="@variant.Name" aria-label="@variant.Name" aria-pressed="@(variant.IsDefault ? "true" : "false")" data-variant-choice data-variant-id="@variant.Id" data-variant-name="@variant.Name" data-variant-image-url="@VersionedImageUrl(variant.ImageUrl)"></button>
+          }
+        </div>
+      </div>
+    }
+    <h2>@Model.Price.ToString("N0") ₽</h2>
+    <p class="description">@Model.Description</p>
+    <div class="product-options" role="group" aria-label="Параметры товара">
+      <label>Выберите размер</label>
+      <div class="sizes" data-variant-size-groups>
+        @foreach (var variant in variants)
+        {
+          <div data-size-options="@variant.Id" hidden="@(variant.Id != selected?.Id)">
+            @foreach (var size in variant.Sizes.Where(s => s.StockQuantity > 0).OrderBy(s => s.Size))
+            {
+              <label><input disabled="@(variant.Id != selected?.Id)" type="radio" name="size" value="@size.Size" /> <span>@size.Size</span></label>
+            }
+            @if (!variant.Sizes.Any(s => s.StockQuantity > 0)) { <p class="size-empty">Нет в наличии</p> }
+          </div>
+        }
+      </div>
+      <div class="product-order-controls">
+        <div class="quantity-picker" data-quantity-picker aria-label="Количество товара">
+          <button type="button" aria-label="Уменьшить количество" data-quantity-decrease>−</button>
+          <input type="number" name="quantity" value="1" min="1" max="10" readonly aria-label="Количество" data-quantity-input />
+          <button type="button" aria-label="Увеличить количество" data-quantity-increase>+</button>
+        </div>
+        <button class="button product-order-controls__submit" type="button">Добавить в корзину</button>
+      </div>
+    </div>
+  </div>
+</section>

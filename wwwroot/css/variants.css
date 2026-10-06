@@ -1,4 +1,5 @@
-.image-wrap {
+.image-wrap,
+.detail-image {
   position: relative;
   overflow: hidden;
 }
@@ -32,6 +33,18 @@
   box-shadow: 0 0 0 3px #fff, 0 0 0 4px #111;
   transform: scale(1.1);
 }
+
+.detail-color {
+  display: block;
+  margin: 0 0 17px;
+  color: #666;
+}
+
+.detail-color b { color: #111; font-weight: 600; }
+.detail-variant-picker { margin: 0 0 25px; }
+.detail-variant-picker > span { font-size: 11px; font-weight: 700; }
+.details .variant-picker { margin-top: 11px; }
+.details .color-swatch { width: 23px; height: 23px; }
 
 .product .variant-image-previous {
   position: absolute !important;

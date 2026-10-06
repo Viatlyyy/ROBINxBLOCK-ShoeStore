@@ -14,6 +14,6 @@
   var versionedImage=VersionedImageUrl(image);
 }
 <article class="product" data-product-card>
- <a aria-disabled="true" tabindex="-1" title="Карточка товара будет доступна позже"><div class="image-wrap">@if(Model.IsNew){<span class="tag">NEW</span>}<img src="@versionedImage" alt="@Model.BrandName @Model.Name" data-variant-image loading="lazy" decoding="async" /></div><p class="brand">@Model.BrandName</p><h3>@Model.Name</h3><p class="color" data-variant-label>@(selected?.Name ?? "—")</p><strong>@Model.Price.ToString("N0") ₽</strong></a>
+ <a asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id"><div class="image-wrap">@if(Model.IsNew){<span class="tag">NEW</span>}<img src="@versionedImage" alt="@Model.BrandName @Model.Name" data-variant-image loading="lazy" decoding="async" /></div><p class="brand">@Model.BrandName</p><h3>@Model.Name</h3><p class="color" data-variant-label>@(selected?.Name ?? "—")</p><strong>@Model.Price.ToString("N0") ₽</strong></a>
  @if(variants.Count>1){<div class="variant-picker" aria-label="Расцветки @Model.BrandName @Model.Name">@foreach(var variant in variants){<button type="button" class="color-swatch @(variant == selected ? "is-selected" : "")" style="--swatch:@variant.Swatch" title="@variant.Name" aria-label="@variant.Name" aria-pressed="@(variant == selected ? "true" : "false")" data-variant-choice data-variant-name="@variant.Name" data-variant-image-url="@VersionedImageUrl(variant.ThumbnailUrl ?? variant.ImageUrl)"></button>}</div>}
 </article>

@@ -4,6 +4,8 @@
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
   var usesProductCards = isHome || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase);
+  var isCatalogDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
+    && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
@@ -24,6 +26,11 @@
   @if (usesProductCards) { <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
+  @if (isCatalogDetails)
+  {
+    <link rel="stylesheet" href="~/css/quantity-picker.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/product-gallery.css" asp-append-version="true" />
+  }
   @if (isHome)
   {
     <link rel="stylesheet" href="~/css/brand-ticker.css" asp-append-version="true" />
@@ -69,6 +76,11 @@
   <main>@RenderBody()</main>
   <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>
   @if (usesProductCards) { <script src="~/js/site.js" asp-append-version="true"></script> }
+  @if (isCatalogDetails)
+  {
+    <script src="~/js/quantity-picker.js" asp-append-version="true"></script>
+    <script src="~/js/product-gallery.js" asp-append-version="true"></script>
+  }
   @if (isHome)
   {
     <script src="~/js/hero-carousel.js" asp-append-version="true"></script>

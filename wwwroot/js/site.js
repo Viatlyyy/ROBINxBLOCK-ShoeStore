@@ -83,11 +83,14 @@
   };
 
   const selectVariant = (scope, button) => {
+    const detailsPage = scope.classList.contains('details');
     const image = scope.querySelector('[data-variant-image]');
     const label = scope.querySelector('[data-variant-label]');
+    const input = scope.querySelector('[data-variant-input]');
 
-    void requestCardImage(image, button.dataset.variantImageUrl || '');
+    if (!detailsPage) void requestCardImage(image, button.dataset.variantImageUrl || '');
     if (label) label.textContent = button.dataset.variantName || '';
+    if (input) input.value = button.dataset.variantId || button.dataset.variantName || '';
 
     scope.querySelectorAll('[data-variant-choice]').forEach(choice => {
       const active = choice === button;
@@ -95,6 +98,19 @@
       choice.setAttribute('aria-pressed', String(active));
     });
 
+    const variantId = button.dataset.variantId;
+    if (!variantId) return;
+    scope.querySelectorAll('[data-size-options]').forEach(group => {
+      const active = group.dataset.sizeOptions === variantId;
+      group.hidden = !active;
+      group.querySelectorAll('input').forEach(control => {
+        control.disabled = !active;
+        if (!active) control.checked = false;
+      });
+    });
+    if (detailsPage) {
+      scope.dispatchEvent(new CustomEvent('productvariantchange', { detail: { variantId } }));
+    }
   };
 
   document.querySelectorAll('[data-variant-image]').forEach(image => {
@@ -103,7 +119,7 @@
 
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-variant-choice]');
-    const scope = button?.closest('[data-product-card]');
+    const scope = button?.closest('[data-product-card], .details');
     if (!button || !scope) return;
     selectVariant(scope, button);
   });

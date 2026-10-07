@@ -3,8 +3,12 @@ using ShoeStore.Services;
 
 namespace ShoeStore.Controllers;
 
-public class HomeController(ICatalogQueryService catalog) : Controller
+public class HomeController : Controller
 {
+    private readonly ICatalogQueryService catalog;
+
+    public HomeController(ICatalogQueryService catalog) => this.catalog = catalog;
+
     public async Task<IActionResult> Index(CancellationToken cancellationToken = default) =>
         View(await catalog.GetHomeAsync(cancellationToken));
 

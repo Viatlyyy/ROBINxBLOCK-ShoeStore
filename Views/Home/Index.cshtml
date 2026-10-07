@@ -24,7 +24,7 @@
         <p class="eyebrow">RONINxBLOCK / НОВЫЙ СЕЗОН</p>
         <h1>@product.BrandName<br />@product.Name</h1>
         <p>@(variant?.Name ?? "Новая расцветка"). Культовая модель для города, комфортная посадка и выразительный силуэт.</p>
-        <a class="button" aria-disabled="true" tabindex="-1" title="Карточка товара будет доступна позже">Смотреть модель <span>→</span></a>
+        <a class="button" asp-controller="Catalog" asp-action="@(product.IsNew ? "New" : "Hits")">Смотреть подборку <span>→</span></a>
         <div class="hero-note"><b>10 000+</b><span>покупателей<br />выбирают RONINxBLOCK</span></div>
       </div>
       <div class="hero-model"><b>@product.BrandName<br />@product.Name</b><span>@(variant?.Name ?? "Новая расцветка")</span></div>
@@ -44,23 +44,30 @@
   <div class="hero-progress" aria-label="Индикатор автоматической смены модели"><span></span></div>
 </section>
 
-<section class="content" id="popular">
-  <div class="section-title"><h2>Популярное</h2><a asp-controller="Catalog" asp-action="Index">Смотреть все →</a></div>
-  <div class="grid">@foreach (var product in products.Take(8)) { <partial name="_ProductCard" model="product" /> }</div>
+<section class="content home-catalog" id="catalog" aria-labelledby="home-catalog-title">
+  <div class="section-title">
+    <h2 id="home-catalog-title">Все модели</h2>
+  </div>
+  <div class="grid collection-grid">
+    @foreach (var product in products)
+    {
+      <partial name="_ProductCard" model="product" />
+    }
+  </div>
 </section>
 
-<section class="content edit-grid feature-grid">
+<section class="content edit-grid feature-grid home-promotions">
   <article class="feature-tile feature-tile--triple" data-reveal>
     <img class="feature-tile__product" src="/images/products/triple-s.jpg" alt="Balenciaga Triple S" loading="lazy" decoding="async" />
-    <div><p class="eyebrow">BALENCIAGA</p><h2>Triple S</h2><a class="button" asp-controller="Catalog" asp-action="Index">Смотреть <span>→</span></a></div>
+    <div><p class="eyebrow">BALENCIAGA</p><h2>Triple S</h2><a class="button" asp-controller="Catalog" asp-action="New">Смотреть <span>→</span></a></div>
   </article>
   <article class="feature-tile feature-tile--collection" data-reveal>
     <img src="/images/features/new-collection-hoodie-640.webp" srcset="/images/features/new-collection-hoodie-640.webp 640w, /images/features/new-collection-hoodie-1200.webp 1200w" sizes="(max-width:760px) 100vw, 50vw" alt="Новая коллекция" loading="lazy" decoding="async" />
-    <div><p class="eyebrow">НОВАЯ КОЛЛЕКЦИЯ</p><h2>Весна / Лето<br />2026</h2><a class="button" asp-controller="Catalog" asp-action="Index">Смотреть <span>→</span></a></div>
+    <div><p class="eyebrow">НОВАЯ КОЛЛЕКЦИЯ</p><h2>Весна / Лето<br />2026</h2><a class="button" asp-controller="Catalog" asp-action="New">Смотреть <span>→</span></a></div>
   </article>
 </section>
 
-<section class="brand-ticker is-paused" aria-label="Бренды в каталоге">
+<section class="brand-ticker is-paused" aria-label="Бренды">
   <div class="brand-ticker__track">
     @for (var copy = 0; copy < 6; copy++)
     {
@@ -84,7 +91,7 @@
     <p class="eyebrow">RONINxBLOCK JOURNAL</p>
     <h2>Культура<br />движется вперёд.</h2>
     <p>Кроссовки — это движение, характер и сообщество. Мы собираем модели, которые остаются актуальными каждый день.</p>
-    <a asp-controller="Catalog" asp-action="Index">Весь каталог <span>→</span></a>
+    <a asp-controller="Home" asp-action="Index" asp-fragment="catalog">Все модели <span>→</span></a>
   </article>
   <a class="culture-board__community" asp-controller="Catalog" asp-action="Index" data-reveal>
     <img src="/images/culture/city-community-640.webp" srcset="/images/culture/city-community-640.webp 640w, /images/culture/city-community-1200.webp 1200w" sizes="(max-width:760px) 100vw, 34vw" alt="Городское сообщество RONINxBLOCK" loading="lazy" decoding="async" />
@@ -96,7 +103,3 @@
   </div>
 </section>
 
-<section class="content" id="new">
-  <div class="section-title"><h2>Новинки</h2><a asp-controller="Catalog" asp-action="Index">Смотреть все →</a></div>
-  <div class="grid">@foreach (var product in products.Skip(8).Take(8)) { <partial name="_ProductCard" model="product" /> }</div>
-</section>

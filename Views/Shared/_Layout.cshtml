@@ -3,7 +3,8 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
-  var usesProductCards = isHome || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase);
+  var usesProductCards = isHome || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
+    && (action.Equals("Index", StringComparison.OrdinalIgnoreCase) || action.Equals("New", StringComparison.OrdinalIgnoreCase) || action.Equals("Hits", StringComparison.OrdinalIgnoreCase));
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
@@ -21,9 +22,8 @@
   }
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/storefront.css" asp-append-version="true" />
   @if (usesProductCards) { <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" /> }
-  <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
-  @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   @if (isHome)
   {
     <link rel="stylesheet" href="~/css/brand-ticker.css" asp-append-version="true" />
@@ -31,16 +31,17 @@
     <link rel="stylesheet" href="~/css/culture-board.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
   }
+  <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
+  @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
 </head>
 <body class="is-page-entering">
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
-    <nav>
-      <a asp-controller="Catalog" asp-action="Index">Каталог</a>
-      <a asp-controller="Home" asp-action="Index" asp-fragment="new">Новинки</a>
-      <a asp-controller="Home" asp-action="Index" asp-fragment="popular">Хиты</a>
+    <nav aria-label="Основная навигация">
+      <a asp-controller="Catalog" asp-action="New">Новинки</a>
+      <a asp-controller="Catalog" asp-action="Hits">Хиты</a>
     </nav>
     <div class="header-actions">
       @if (User.Identity?.IsAuthenticated == true)
@@ -67,6 +68,26 @@
     </div>
   </header>
   <main>@RenderBody()</main>
+  <footer class="store-footer" id="contacts">
+    <div class="store-footer__grid">
+      <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a></div>
+      <nav aria-label="Навигация в футере">
+        <h2>Магазин</h2>
+        <a asp-controller="Catalog" asp-action="New">Новинки</a>
+        <a asp-controller="Catalog" asp-action="Hits">Хиты</a>
+        <a asp-controller="Account" asp-action="Login">Личный кабинет</a>
+      </nav>
+      <div>
+        <h2>Контакты</h2>
+        <a class="store-footer__phone" href="tel:+79180566359">8 (918) 056-63-59</a>
+        <address>Новороссийск, ул. Толстого, 2/4<br />Парк имени М. В. Фрунзе</address>
+        <a class="store-footer__website" href="https://vk.ru/public216238112" target="_blank" rel="noopener noreferrer">ВКонтакте ↗</a>
+      </div>
+    </div>
+    <div class="store-footer__bottom"><span>© @DateTime.Now.Year RONINxBLOCK</span></div>
+  </footer>
+  @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
+  @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>
   @if (usesProductCards) { <script src="~/js/site.js" asp-append-version="true"></script> }
   @if (isHome)
@@ -75,8 +96,6 @@
     <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
   }
-  @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
-  @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
 </body>
 </html>

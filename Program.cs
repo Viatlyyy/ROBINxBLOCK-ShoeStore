@@ -10,6 +10,8 @@ using ShoeStore.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
+
 builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
 {
     var connectionString = services.GetRequiredService<IConfiguration>().GetConnectionString("DefaultConnection");
@@ -82,14 +84,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 // Общий фильтр проверяет токен у изменяющих запросов; открытие страницы GET не блокируется.
-builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
 builder.Services.AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    // Таблицы Identity должны быть заранее созданы в настроенной базе данных.
+    // Таблицы заранее импортируются из Database/shoestore-schema.sql в отдельную локальную БД.
     var roles = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     if (!await roles.RoleExistsAsync("Customer"))
     {

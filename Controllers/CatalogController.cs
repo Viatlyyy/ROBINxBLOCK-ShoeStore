@@ -1,27 +1,36 @@
 using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Services;
+using Microsoft.EntityFrameworkCore;
+using ShoeStore.Data;
+using ShoeStore.Models;
 
 namespace ShoeStore.Controllers;
 
-public class CatalogController : Controller
+public class CatalogController(ApplicationDbContext db) : Controller
 {
-    private readonly ICatalogQueryService catalog;
-
-    public CatalogController(ICatalogQueryService catalog) => this.catalog = catalog;
-
     public IActionResult Index() => RedirectToAction("Index", "Home", routeValues: null, fragment: "catalog");
 
-    public async Task<IActionResult> New(CancellationToken cancellationToken = default)
+    public IActionResult New()
     {
-        var model = await catalog.GetHomeAsync(cancellationToken);
         ViewData["Title"] = "Новинки";
-        return View("Collection", model.Products.Where(product => product.IsNew).ToList());
+        return View("Collection", HomePageDemoData.Create().Products.Where(product => product.IsNew).ToList());
     }
 
-    public async Task<IActionResult> Hits(CancellationToken cancellationToken = default)
+    public IActionResult Hits()
     {
-        var model = await catalog.GetHomeAsync(cancellationToken);
         ViewData["Title"] = "Хиты";
-        return View("Collection", model.Products.Where(product => product.IsPopular).ToList());
+        return View("Collection", HomePageDemoData.Create().Products.Where(product => product.IsPopular).ToList());
+    }
+
+    public async Task<IActionResult> Details(int id, CancellationToken cancellationToken = default)
+    {
+        if (id <= 0) return NotFound();
+
+        var product = await db.Products.AsNoTracking()
+            .Include(item => item.Brand)
+            .Include(item => item.Variants).ThenInclude(variant => variant.Sizes)
+            .Include(item => item.Variants).ThenInclude(variant => variant.GalleryImages)
+            .AsSplitQuery()
+            .FirstOrDefaultAsync(item => item.Id == id && item.Status == ProductStatus.Active, cancellationToken);
+        return product is null ? NotFound() : View(product);
     }
 }

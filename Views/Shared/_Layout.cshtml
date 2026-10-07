@@ -3,6 +3,8 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
+  var isProductDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
+    && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
   var usesProductCards = isHome || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Index", StringComparison.OrdinalIgnoreCase) || action.Equals("New", StringComparison.OrdinalIgnoreCase) || action.Equals("Hits", StringComparison.OrdinalIgnoreCase));
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
@@ -23,7 +25,12 @@
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/storefront.css" asp-append-version="true" />
-  @if (usesProductCards) { <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" /> }
+  @if (usesProductCards || isProductDetails) { <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" /> }
+  @if (isProductDetails)
+  {
+    <link rel="stylesheet" href="~/css/quantity-picker.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/product-gallery.css" asp-append-version="true" />
+  }
   @if (isHome)
   {
     <link rel="stylesheet" href="~/css/brand-ticker.css" asp-append-version="true" />
@@ -70,7 +77,7 @@
   <main>@RenderBody()</main>
   <footer class="store-footer" id="contacts">
     <div class="store-footer__grid">
-      <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a></div>
+      <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a><p>Молодежные кроссовки<br />и городской стиль.</p></div>
       <nav aria-label="Навигация в футере">
         <h2>Магазин</h2>
         <a asp-controller="Catalog" asp-action="New">Новинки</a>
@@ -89,7 +96,12 @@
   @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
   @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>
-  @if (usesProductCards) { <script src="~/js/site.js" asp-append-version="true"></script> }
+  @if (usesProductCards || isProductDetails) { <script src="~/js/site.js" asp-append-version="true"></script> }
+  @if (isProductDetails)
+  {
+    <script src="~/js/quantity-picker.js" asp-append-version="true"></script>
+    <script src="~/js/product-gallery.js" asp-append-version="true"></script>
+  }
   @if (isHome)
   {
     <script src="~/js/hero-carousel.js" asp-append-version="true"></script>

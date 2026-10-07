@@ -7,7 +7,7 @@ public class Product
     public int Id { get; set; }
     [Required, StringLength(100)] public string Name { get; set; } = "";
     [Required, StringLength(2000)] public string Description { get; set; } = "";
-    [Range(typeof(decimal), "1", "999999")] public decimal Price { get; set; }
+    [Range(1, 999999)] public decimal Price { get; set; }
     public decimal? OldPrice { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsNew { get; set; }

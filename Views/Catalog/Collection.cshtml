@@ -1,0 +1,11 @@
+@model IReadOnlyList<ShoeStore.Models.ProductCardViewModel>
+<section class="content collection-page" aria-labelledby="collection-title">
+  <p class="eyebrow">RONINxBLOCK / @(ViewData["CollectionLabel"] ?? "КОЛЛЕКЦИИ")</p>
+  <h1 id="collection-title">@ViewData["Title"]</h1>
+  <div class="grid collection-grid">
+    @foreach (var product in Model)
+    {
+      <partial name="_ProductCard" model="product" />
+    }
+  </div>
+</section>

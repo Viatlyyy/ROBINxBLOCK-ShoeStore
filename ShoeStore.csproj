@@ -8,12 +8,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="ShoeStore.Models\**\*.cs" />
-    <Content Remove="ShoeStore.Models\**" />
-    <None Remove="ShoeStore.Models\**" />
     <Compile Remove="Tests\**\*.cs" />
+    <Compile Remove="ShoeStore.Models\**\*.cs" />
     <Content Remove="Tests\**" />
+    <Content Remove="ShoeStore.Models\**" />
     <None Remove="Tests\**" />
+    <None Remove="ShoeStore.Models\**" />
+    <Content Remove="**\TestResults\**" />
+    <None Remove="**\TestResults\**" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ShoeStore.Models\ShoeStore.Models.csproj" />

@@ -1,9 +1,19 @@
 /* Avoid permanent compositor layers. Web Animations allocates them only for
    the short lifetime of an actual image transition. */
 .product,
-.product img {
+.product img,
+.detail-image img {
   will-change: auto;
 }
+
+/* A colour-specific wrapper must not turn size choices into a column. */
+.details .sizes [data-size-options]:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.details .sizes [data-size-options] label { display: block; }
 
 /* Below-the-fold sections are skipped until they approach the viewport while
    retaining stable intrinsic space and therefore avoiding layout shifts. */

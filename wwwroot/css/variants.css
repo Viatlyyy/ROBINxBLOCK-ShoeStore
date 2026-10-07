@@ -4,10 +4,6 @@
   overflow: hidden;
 }
 
-.product .tag {
-  z-index: 3;
-}
-
 .variant-picker {
   display: flex;
   align-items: center;

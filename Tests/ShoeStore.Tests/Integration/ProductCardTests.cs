@@ -30,7 +30,6 @@ public class ProductCardTests
             {
                 AllowAutoRedirect = false, HandleCookies = false
             });
-            // До первого GET: заметим и однократную запись, даже если другой тест открыл товар раньше.
             initialCatalogSnapshot = await database.CatalogSnapshotAsync();
         }
         catch
@@ -137,7 +136,6 @@ public class ProductCardTests
             CollectionAssert.AreEqual(expected, gallery.QuerySelectorAll("[data-gallery-source]")
                 .Select(i => ImagePath(i.GetAttribute("data-gallery-source"))).ToArray());
         }
-        // Второй по ID вариант выбран первым; фотографии сортируются независимо от порядка вставки.
         Assert.AreEqual("Black / Castlerock", Required(page, "[data-variant-label]").TextContent);
         CollectionAssert.AreEqual(new[]
         {
@@ -149,8 +147,8 @@ public class ProductCardTests
     }
 
     [TestMethod]
-    [DataRow(2)] // Все остатки нулевые.
-    [DataRow(3)] // Нет записей размеров.
+    [DataRow(2)]
+    [DataRow(3)]
     public async Task NoAvailableSizes_ShowsOutOfStock(int id)
     {
         using var page = await GetPageAsync($"/Catalog/Details/{id}");

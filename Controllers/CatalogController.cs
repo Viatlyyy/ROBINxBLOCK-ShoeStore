@@ -23,10 +23,8 @@ public class CatalogController(ApplicationDbContext db) : Controller
 
     public async Task<IActionResult> Details(int id, CancellationToken cancellationToken = default)
     {
-        // Несуществующий идентификатор сразу отклоняем, не открывая соединение с БД.
         if (id <= 0) return NotFound();
 
-        // Карточка читает опубликованный товар и связанные данные, ничего не сохраняя.
         var product = await db.Products.AsNoTracking()
             .Include(item => item.Brand)
             .Include(item => item.Variants).ThenInclude(variant => variant.Sizes)

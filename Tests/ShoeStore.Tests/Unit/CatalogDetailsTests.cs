@@ -28,7 +28,6 @@ public class CatalogDetailsTests
         Assert.AreEqual(0, guard.OpenAttempts, "Некорректный ID не должен открывать соединение.");
     }
 
-    // Настоящий контекст и контроллер; перехватчик запрещает любой доступ к БД.
     private sealed class DatabaseAccessGuard : DbConnectionInterceptor
     {
         public int OpenAttempts { get; private set; }

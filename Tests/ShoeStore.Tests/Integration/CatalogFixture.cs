@@ -7,7 +7,6 @@ namespace ShoeStore.Tests.Integration;
 
 internal static class CatalogFixture
 {
-    // Независимый список макета, не результат HomePageDemoData.Create().
     internal static readonly (int Id, string Brand, string Name, string File)[] Models =
     [
         (1, "New Balance", "9060", "9060"), (2, "New Balance", "1906R", "1906r"),
@@ -39,14 +38,13 @@ internal static class CatalogFixture
                 Swatch = "#ffffff", ImageUrl = $"/images/products/{model.File}.jpg", IsDefault = model.Id != 1,
                 Sizes = [new ProductVariantSize { Size = 38, StockQuantity = model.Id == 2 ? 0 : 5 }]
             };
-            if (model.Id == 3) variant.Sizes.Clear(); // Вообще нет размеров, а не только нулевой остаток.
+            if (model.Id == 3) variant.Sizes.Clear();
             if (model.Id == 1)
                 variant.Sizes.AddRange([new() { Size = 39, StockQuantity = 0 }, new() { Size = 40, StockQuantity = 1 }]);
             db.Products.Add(new Product
             {
                 Id = model.Id, Name = model.Name, BrandId = brands.Single(brand => brand.Name == model.Brand).Id,
                 CategoryId = 1, Status = ProductStatus.Active, ImageUrl = variant.ImageUrl,
-                // Отличаются от плиток макета: захардкоженная карточка не пройдёт проверку.
                 Price = 30000m + model.Id, Description = $"Описание из PostgreSQL для {model.Name}: <детали> & качество.",
                 Variants = model.Id != 1 ? [variant] :
                 [
@@ -56,7 +54,6 @@ internal static class CatalogFixture
                         Id = 29, Name = "Black / Castlerock", Sku = "CARD-29", Swatch = "#25272b", IsDefault = true,
                         ImageUrl = "/images/gallery/optimized/colors/9060-black-castlerock-side.jpg",
                         Sizes = [new() { Size = 41, StockQuantity = 2 }, new() { Size = 42, StockQuantity = 0 }],
-                        // Обратный порядок записи отличает сортировку от случайного порядка в БД.
                         GalleryImages =
                         [
                             new() { ImageUrl = "/images/gallery/optimized/colors/9060-black-castlerock-rear.jpg", SortOrder = 10 },

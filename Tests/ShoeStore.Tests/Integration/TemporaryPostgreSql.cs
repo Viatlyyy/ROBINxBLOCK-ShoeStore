@@ -5,7 +5,6 @@ using Npgsql;
 
 namespace ShoeStore.Tests.Integration;
 
-// Собственный временный сервер. Не читает секреты приложения и не использует рабочую БД.
 public sealed class TemporaryPostgreSql : IAsyncDisposable
 {
     private readonly string directory = Path.Combine(Path.GetTempPath(), "shoestore-card-tests-" + Guid.NewGuid().ToString("N"));
@@ -35,7 +34,6 @@ public sealed class TemporaryPostgreSql : IAsyncDisposable
                 "-o", $"-h 127.0.0.1 -p {port}", "-w", "-t", "20", "start");
             database.serverStarted = true;
 
-            // Подтверждаем, что подключились именно к созданной нами папке данных.
             await using var connection = new NpgsqlConnection(database.ConnectionString);
             await connection.OpenAsync();
             await using var command = new NpgsqlCommand("SHOW data_directory", connection);
@@ -53,12 +51,10 @@ public sealed class TemporaryPostgreSql : IAsyncDisposable
 
     public async Task ImportSchemaAsync(string schemaPath)
     {
-        // Используем один общий SQL-файл из веб-проекта. Копии схемы в Tests нет.
         await using var connection = new NpgsqlConnection(ConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(await File.ReadAllTextAsync(schemaPath), connection);
         await command.ExecuteNonQueryAsync();
-        // SQL-дамп создаёт citext после открытия соединения. Обновляем кеш типов Npgsql.
         await using var searchPath = new NpgsqlCommand("SET search_path TO public", connection);
         await searchPath.ExecuteNonQueryAsync();
         await connection.ReloadTypesAsync();
@@ -71,7 +67,6 @@ public sealed class TemporaryPostgreSql : IAsyncDisposable
         var rows = new List<string>();
         foreach (var table in new[] { "Products", "Brands", "Categories", "ProductVariants", "ProductVariantImages", "ProductVariantSizes" })
         {
-            // Полный снимок строк, а не только их количества: замечает и UPDATE, и INSERT, и DELETE.
             await using var command = new NpgsqlCommand($"SELECT COALESCE(string_agg(j, E'\\n' ORDER BY j), '') FROM (SELECT to_jsonb(t)::text j FROM public.\"{table}\" t) data", connection);
             rows.Add(table + ":" + await command.ExecuteScalarAsync());
         }
@@ -83,7 +78,6 @@ public sealed class TemporaryPostgreSql : IAsyncDisposable
         if (!Directory.Exists(directory)) return;
         if (serverStarted || File.Exists(Path.Combine(directory, "postmaster.pid")))
         {
-            // pg_ctl адресован нашей папке, а не службе PostgreSQL пользователя.
             await RunAsync("pg_ctl", "-D", directory, "-m", "fast", "-w", "-t", "20", "stop");
             serverStarted = false;
         }
@@ -102,8 +96,6 @@ public sealed class TemporaryPostgreSql : IAsyncDisposable
 
     private async Task RunAsync(string executable, params string[] arguments)
     {
-        // На Windows фоновый postgres наследует перенаправленные каналы pg_ctl start.
-        // Поэтому у запуска сервера ждём только завершения pg_ctl, а лог читаем из файла.
         var startsServer = executable == "pg_ctl" && arguments.Contains("start");
         var info = new ProcessStartInfo(Path.Combine(binDirectory, executable + (OperatingSystem.IsWindows() ? ".exe" : "")))
         {

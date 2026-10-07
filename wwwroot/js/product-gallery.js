@@ -25,7 +25,7 @@
     const task = new Promise(resolve => {
       const loader = new Image();
       loader.onload = async () => {
-        try { await loader.decode?.(); } catch { /* Loaded images remain displayable. */ }
+        try { await loader.decode?.(); } catch { }
         resolve(true);
       };
       loader.onerror = () => resolve(false);

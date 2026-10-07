@@ -10,7 +10,6 @@ using ShoeStore.Data;
 
 namespace ShoeStore.Tests.Integration;
 
-// Настоящий MVC и настоящий PostgreSQL. Контроллер, Identity и Razor не подменяются.
 public sealed class ProductDetailsApplicationFactory(string connectionString) : WebApplicationFactory<Program>
 {
     public static string ProjectRoot
@@ -27,12 +26,10 @@ public sealed class ProductDetailsApplicationFactory(string connectionString) : 
     {
         builder.UseEnvironment("Development");
         builder.UseContentRoot(ProjectRoot);
-        // Последний источник конфигурации заменяет подключение из любых пользовательских секретов.
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(
             new Dictionary<string, string?> { ["ConnectionStrings:DefaultConnection"] = connectionString }));
         builder.ConfigureTestServices(services =>
         {
-            // Контекст создаётся с тестовым подключением напрямую: секреты рабочего сайта не используются.
             services.RemoveAll<ApplicationDbContext>();
             services.AddScoped(_ => new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseNpgsql(connectionString).Options));

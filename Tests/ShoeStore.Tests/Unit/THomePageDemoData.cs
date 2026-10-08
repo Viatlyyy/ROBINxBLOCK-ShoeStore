@@ -10,7 +10,7 @@ public class THomePageDemoData
     {
         var model = HomePageDemoData.Create();
 
-        // По восемь демонстрационных плиток в двух блоках макета.
+
         Assert.HasCount(16, model.Products);
         CollectionAssert.AreEquivalent(
             new[] { "9060", "3XL", "Dunk Low" },

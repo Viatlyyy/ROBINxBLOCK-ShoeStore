@@ -17,8 +17,6 @@
     target = clamp(target);
   };
   const scheduleMeasure = () => {
-    // Scroll anchoring can move the viewport when lazy content changes the
-    // document height. Do not fight that native correction with an old target.
     if (frame) stop();
     if (!measureFrame) measureFrame = requestAnimationFrame(measure);
   };
@@ -48,14 +46,10 @@
   const render = timestamp => {
     const current = window.scrollY;
     const distance = target - current;
-    // A wheel gesture must have a finite lifetime. This prevents a stale
-    // fractional target from nudging an otherwise idle page indefinitely.
     if (Math.abs(distance) < .5 || timestamp >= animationDeadline) {
       frame = 0;
       previousTime = 0;
       animationDeadline = 0;
-      // Finish exactly where the preceding animation frame stopped. Snapping
-      // to the old target here produces a visible one-pixel kick at rest.
       target = current;
       return;
     }

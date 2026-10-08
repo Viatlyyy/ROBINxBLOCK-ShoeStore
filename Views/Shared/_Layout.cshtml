@@ -3,7 +3,6 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
-  // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
 }
@@ -44,7 +43,6 @@
     <div class="header-actions">
       @if (User.Identity?.IsAuthenticated == true)
       {
-        // Имя пришло из claim при регистрации. Для аккаунтов без имени используем запасной вариант.
         var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value;
         displayName = string.IsNullOrWhiteSpace(displayName) ? "Пользователь" : displayName.Trim();
         var avatarLetter = displayName[..1].ToUpperInvariant();
@@ -52,7 +50,7 @@
           <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>@avatarLetter</button>
           <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
             <p class="account-menu__email">@displayName</p>
-            @* Form Tag Helper добавит токен для POST-выхода; ссылка GET сессию не завершает. *@
+
             <form asp-controller="Account" asp-action="Logout" method="post">
               <button type="submit" role="menuitem">Выйти</button>
             </form>

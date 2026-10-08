@@ -213,7 +213,7 @@ html.has-reveal-motion .feature-tile[data-reveal].is-visible:hover {
   .culture-board__stack { grid-template-columns: 1fr 1fr; height: 180px; }
 }
 
-/* These animations intentionally stay active when system animations are disabled. */
+
 @media (prefers-reduced-motion: reduce) {
   .feature-grid .feature-tile,
   .feature-grid .feature-tile > img,

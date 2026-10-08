@@ -10,7 +10,7 @@ public class THomeController
     [TestMethod]
     public void Index_ReturnsViewWithDemoModel()
     {
-        // Вызываем настоящее действие без веб-сервера и без подключения к БД.
+
         var controller = new HomeController();
 
         var result = controller.Index();

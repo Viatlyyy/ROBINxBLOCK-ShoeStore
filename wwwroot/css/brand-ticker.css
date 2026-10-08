@@ -171,7 +171,7 @@
   }
 }
 
-/* The ticker deliberately remains smooth when system animations are disabled. */
+
 @media (prefers-reduced-motion: reduce) {
   .brand-ticker__track {
     animation: brand-ticker-move 32s linear infinite !important;

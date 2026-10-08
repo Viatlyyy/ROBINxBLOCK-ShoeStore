@@ -16,7 +16,7 @@ using ShoeStore.Services;
 
 namespace ShoeStore.Tests.Integration;
 
-// Запускаем настоящий Program и MVC, но не разрешаем обратиться ни к одной БД.
+
 public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly RejectDatabaseConnections databaseGuard = new();
@@ -34,7 +34,7 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
-            // Каталог работает с PostgreSQL в приложении; тестовый хост получает данные из мока.
+
             catalog.Setup(service => service.GetCatalogAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns((int page, CancellationToken token) => Task.FromResult(new CatalogPageViewModel
                 {
@@ -42,8 +42,8 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
                 }));
             services.RemoveAll<ICatalogQueryService>();
             services.AddSingleton(catalog.Object);
-            // Program.cs проверяет роль при старте. Подменяем эту проверку,
-            // а не контроллеры или Razor: роль тестового сервера считается уже существующей.
+
+
             var roles = new Mock<RoleManager<IdentityRole>>(
                 Mock.Of<IRoleStore<IdentityRole>>(), Array.Empty<IRoleValidator<IdentityRole>>(),
                 new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(),
@@ -52,9 +52,9 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<RoleManager<IdentityRole>>();
             services.AddSingleton(roles.Object);
 
-            // Перехватчик дополнительно запрещает открытие соединения до сетевого обращения.
+
             services.AddDbContext<ApplicationDbContext>(options => options.AddInterceptors(databaseGuard));
-            // Ключи cookie тестового сервера существуют только в памяти.
+
             services.AddDataProtection().UseEphemeralDataProtectionProvider();
         });
     }

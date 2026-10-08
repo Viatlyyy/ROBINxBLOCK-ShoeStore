@@ -1,4 +1,4 @@
-/* Общий футер и адаптивная навигация. Оформление главной восстановлено из исходного проекта. */
+
 .store-footer { padding: 50px 4.5% 22px; margin-top: 30px; background: #f5f5f3; border-top: 1px solid #e7e7e4; scroll-margin-top: 90px; }
 .store-footer__grid { display: grid; grid-template-columns: 1.3fr 1fr 1.3fr; gap: 40px; max-width: 1256px; margin: auto; }
 .store-footer h2 { font-size: 14px; margin: 0 0 20px; }

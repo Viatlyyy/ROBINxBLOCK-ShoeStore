@@ -64,13 +64,13 @@
   .hero-slide .hero-model { top: 20px; left: 20px; }
 }
 
-/* Hero changes still animate when system motion is disabled. */
+
 @media (prefers-reduced-motion: reduce) {
   .hero-slide { transition-duration: 1.7s !important; }
   .hero-carousel.has-transitioned .hero-slide.is-active .hero-photo > img { animation-duration: 1.45s !important; }
 }
 
-/* Full-bleed hero: copy stays above the photo instead of occupying a separate column. */
+
 .hero-carousel { height: 560px; background: #f4f4f2; }
 .hero-slide,
 .hero-slide.is-active { display: block; transform: none; }
@@ -91,8 +91,7 @@
   transform: scale(1.035);
   transition: opacity 1.05s cubic-bezier(.22,.75,.25,1), transform 5.8s cubic-bezier(.22,.75,.25,1);
 }
-/* The first scene is already active in the server-rendered markup. Avoid a
-   second entrance transition while keeping every user/automatic swap intact. */
+
 .hero-carousel:not(.has-transitioned) .hero-slide.is-active .hero-scene--feet {
   transition: none;
 }
@@ -169,7 +168,7 @@
 .hero-progress { z-index: 4; overflow: hidden; }
 .hero-progress span { width: 100%; transform: scaleX(0); transform-origin: left; animation: none !important; }
 
-/* The in-hero scene swap remains animated when system motion is disabled. */
+
 @media (prefers-reduced-motion: reduce) {
   .hero-scene { transition: opacity 1.05s cubic-bezier(.22,.75,.25,1), transform 5.8s cubic-bezier(.22,.75,.25,1) !important; }
   .hero-carousel:not(.has-transitioned) .hero-slide.is-active .hero-scene--feet { transition: none !important; }

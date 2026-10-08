@@ -2,8 +2,8 @@ using ShoeStore.Models;
 
 namespace ShoeStore.Data;
 
-// Демонстрационное наполнение макета взято из готового сайта.
-// Эти объекты создаются в памяти: класс не обращается к БД и не сохраняет в неё товары.
+
+
 public static class HomePageDemoData
 {
     public static HomePageViewModel Create()

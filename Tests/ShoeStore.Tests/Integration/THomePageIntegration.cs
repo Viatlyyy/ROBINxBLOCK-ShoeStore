@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ShoeStore.Tests.Integration;
 
-// Ручная проверка не является методом MSTest: её выполняют в браузере.
-// 1. Сравнить оформление главной с готовым сайтом.
-// 2. Проверить слайдер: стрелки работают, кружочки только показывают текущий слайд.
-// 3. Проверить текст «Реализуется в будущем» на страницах «Новинки» и «Хиты».
-// 4. Проверить шестнадцать заглушек в каталоге на главной.
-// 5. Убедиться, что заглушки не открывают Details.
-// 6. Проверить широкий и узкий экран без горизонтального переполнения.
+
+
+
+
+
+
+
 [TestClass]
 [DoNotParallelize]
 public class THomePageIntegration
@@ -22,7 +22,7 @@ public class THomePageIntegration
     public void Setup()
     {
         application = new HomePageApplicationFactory();
-        // Не следуем перенаправлениям: тест должен заметить ошибочный переход на вход.
+
         client = application.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
     }
 

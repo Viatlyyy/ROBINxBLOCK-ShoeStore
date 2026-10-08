@@ -17,7 +17,7 @@
 .account-menu__trigger:hover, .account-menu__trigger:focus-visible, .account-menu.is-open .account-menu__trigger { background: #111; color: #fff; outline: none; }
 .account-menu__trigger:hover, .account-menu__trigger:focus-visible { transform: rotate(9deg) scale(1.08); }
 .account-menu__panel { position: absolute; top: calc(100% + 11px); right: 0; z-index: 20; width: 220px; padding: 9px; border: 1px solid #e7e7e7; background: #fff; box-shadow: 0 14px 34px rgba(0,0,0,.12); visibility: hidden; opacity: 0; transform: translateY(-6px); pointer-events: none; transition: opacity .22s ease, transform .22s ease, visibility .22s; }
-/* Классом из account-menu.js включаем панель. В закрытом состоянии она не перехватывает клики. */
+
 .account-menu.is-open .account-menu__panel { visibility: visible; opacity: 1; transform: translateY(0); pointer-events: auto; }
 .account-menu__email { overflow: hidden; margin: 5px 8px 8px; padding-bottom: 10px; border-bottom: 1px solid #eee; color: #777; font-size: 10px; font-weight: 600; text-overflow: ellipsis; text-transform: none; white-space: nowrap; }
 .account-menu__panel a, .account-menu__panel button { display: block; width: 100%; padding: 10px 8px; border: 0; background: transparent; color: #111; font: 700 10px Inter,Arial,sans-serif; text-align: left; text-transform: uppercase; }

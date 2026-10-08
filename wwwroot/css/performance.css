@@ -1,22 +1,19 @@
-/* Avoid permanent compositor layers. Web Animations allocates them only for
-   the short lifetime of an actual image transition. */
-
-
-/* A colour-specific wrapper must not turn size choices into a column. */
 
 
 
 
-/* Below-the-fold sections are skipped until they approach the viewport while
-   retaining stable intrinsic space and therefore avoiding layout shifts. */
+
+
+
+
+
 .home-culture,
 .edit-grid {
   content-visibility: auto;
   contain-intrinsic-size: auto 500px;
 }
 
-/* The storefront deliberately keeps its branded interaction motion even when
-   the operating system disables optional UI motion. */
+
 @media (prefers-reduced-motion: reduce) {
 
 

@@ -1,19 +1,11 @@
 /* Avoid permanent compositor layers. Web Animations allocates them only for
    the short lifetime of an actual image transition. */
-.product,
-.product img,
-.detail-image img {
-  will-change: auto;
-}
+
 
 /* A colour-specific wrapper must not turn size choices into a column. */
-.details .sizes [data-size-options]:not([hidden]) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
 
-.details .sizes [data-size-options] label { display: block; }
+
+
 
 /* Below-the-fold sections are skipped until they approach the viewport while
    retaining stable intrinsic space and therefore avoiding layout shifts. */
@@ -26,8 +18,8 @@
 /* The storefront deliberately keeps its branded interaction motion even when
    the operating system disables optional UI motion. */
 @media (prefers-reduced-motion: reduce) {
-  .product { transition-duration: .28s !important; }
-  .product img { transition-duration: .38s !important; }
+
+
   .button,
   .light-button,
   .header a { transition-duration: .2s !important; }

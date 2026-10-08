@@ -28,7 +28,7 @@
   background: #f0f0f0 !important;
 }
 
-.feature-tile--triple .feature-tile__product {
+.feature-tile--triple .feature-tile__advertisement {
   position: absolute;
   top: 0;
   right: 0;
@@ -46,7 +46,7 @@
 }
 
 .feature-tile--collection::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg, rgba(239, 239, 239, .98) 0%, rgba(239, 239, 239, .66) 39%, transparent 67%);

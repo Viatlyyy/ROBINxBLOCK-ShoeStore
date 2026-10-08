@@ -61,7 +61,7 @@
 .culture-board__image::after,
 .culture-board__community::after,
 .culture-board__stack a::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(145deg, rgba(0, 0, 0, .16), transparent 58%, rgba(0, 0, 0, .18));

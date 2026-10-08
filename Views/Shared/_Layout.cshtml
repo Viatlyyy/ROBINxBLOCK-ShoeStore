@@ -3,8 +3,6 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
-  var usesProductCards = isHome || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
-    && (action.Equals("Index", StringComparison.OrdinalIgnoreCase) || action.Equals("New", StringComparison.OrdinalIgnoreCase) || action.Equals("Hits", StringComparison.OrdinalIgnoreCase));
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
@@ -23,7 +21,7 @@
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/storefront.css" asp-append-version="true" />
-  @if (usesProductCards) { <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" /> }
+  <link rel="stylesheet" href="~/css/placeholders.css" asp-append-version="true" />
   @if (isHome)
   {
     <link rel="stylesheet" href="~/css/brand-ticker.css" asp-append-version="true" />
@@ -89,7 +87,6 @@
   @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
   @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>
-  @if (usesProductCards) { <script src="~/js/site.js" asp-append-version="true"></script> }
   @if (isHome)
   {
     <script src="~/js/hero-carousel.js" asp-append-version="true"></script>

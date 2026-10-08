@@ -54,7 +54,7 @@
 
 .hero-slide .hero-model span { color: #666; }
 .hero-arrow,
-.hero-dots button { border-color: #cfcfcf; background: rgba(255,255,255,.96); }
+.hero-dots .hero-dot { border-color: #cfcfcf; background: rgba(255,255,255,.96); }
 .hero-arrow:hover { background: #111; color: #fff; }
 .hero-progress { background: #d7d7d7; }
 .hero-progress span { background: #111; }

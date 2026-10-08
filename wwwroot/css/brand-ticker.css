@@ -7,7 +7,7 @@
 
 .brand-ticker::before,
 .brand-ticker::after {
-  content: '';
+  content: "";
   position: absolute;
   z-index: 2;
   top: 0;

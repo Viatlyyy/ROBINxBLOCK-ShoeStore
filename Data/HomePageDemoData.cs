@@ -65,16 +65,15 @@ public static class HomePageDemoData
     }
 
     private static ProductCardViewModel CreateProduct(
-        int id, string brandName, string name, decimal price, bool isPopular,
+        int id, string brandName, string name, decimal price, bool isNew,
         params ProductCardVariantViewModel[] variants) => new()
     {
         Id = id,
         BrandName = brandName,
         Name = name,
         Price = price,
-        // Сохраняем прежний состав подборок: первые модели — хиты, остальные — новинки.
-        IsNew = !isPopular,
-        IsPopular = isPopular,
+        IsNew = isNew,
+        IsPopular = true,
         Variants = [.. variants]
     };
 

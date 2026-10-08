@@ -9,13 +9,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="Tests\**\*.cs" />
-    <Compile Remove="ShoeStore.Models\**\*.cs" />
     <Content Remove="Tests\**" />
-    <Content Remove="ShoeStore.Models\**" />
     <None Remove="Tests\**" />
-    <None Remove="ShoeStore.Models\**" />
     <Content Remove="**\TestResults\**" />
     <None Remove="**\TestResults\**" />
+    <Compile Remove="ShoeStore.Models\**\*.cs" />
+    <Content Remove="ShoeStore.Models\**" />
+    <None Remove="ShoeStore.Models\**" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="ShoeStore.Models\ShoeStore.Models.csproj" />

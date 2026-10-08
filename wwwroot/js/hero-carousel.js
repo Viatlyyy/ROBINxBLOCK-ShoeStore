@@ -80,7 +80,6 @@
 
   root.querySelector('[data-hero-prev]')?.addEventListener('click', () => show(current - 1));
   root.querySelector('[data-hero-next]')?.addEventListener('click', () => show(current + 1));
-  dots.forEach((dot, index) => dot.addEventListener('click', () => show(index)));
 
   if ('IntersectionObserver' in window) {
     new IntersectionObserver(entries => {

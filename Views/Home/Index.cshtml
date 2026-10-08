@@ -1,18 +1,21 @@
 @model ShoeStore.Models.HomePageViewModel
 @{
-  ViewData["Title"] = "Молодежные кроссовки";
-  var products = Model.Products;
-  var slides = products.Where(p => p.Name == "9060" || p.Name == "3XL" || p.Name == "Dunk Low").ToList();
+  ViewData["Title"] = "RONINxBLOCK";
+  var slides = new[]
+  {
+    (Brand: "New Balance", Name: "9060", Color: "Sea Salt", Scene: "9060-urban-feet-v6", Pair: "9060-urban-pair-v6", Action: "Hits"),
+    (Brand: "Balenciaga", Name: "3XL", Color: "White / Grey", Scene: "3xl-urban-feet-v5", Pair: "3xl-urban-pair-v5", Action: "New"),
+    (Brand: "Nike", Name: "Dunk Low", Color: "Panda", Scene: "dunk-urban-feet-v6", Pair: "dunk-urban-pair-v6", Action: "New")
+  };
   var brands = Model.Brands;
 }
 
 <section class="hero-carousel" aria-label="Популярные модели">
-  @for (var i = 0; i < slides.Count; i++)
+  @for (var i = 0; i < slides.Length; i++)
   {
-    var product = slides[i];
-    var variant = product.Variants.OrderByDescending(v => v.IsDefault).FirstOrDefault();
-    var onFeet = product.Name == "9060" ? "/images/hero/9060-urban-feet-v6" : product.Name == "3XL" ? "/images/hero/3xl-urban-feet-v5" : "/images/hero/dunk-urban-feet-v6";
-    var pair = product.Name == "9060" ? "/images/hero/9060-urban-pair-v6" : product.Name == "3XL" ? "/images/hero/3xl-urban-pair-v5" : "/images/hero/dunk-urban-pair-v6";
+    var slide = slides[i];
+    var onFeet = "/images/hero/" + slide.Scene;
+    var pair = "/images/hero/" + slide.Pair;
 
     <article class="hero-slide @(i == 0 ? "is-active" : "")">
       <div class="hero-media" aria-hidden="true">
@@ -22,21 +25,21 @@
       </div>
       <div class="hero-copy">
         <p class="eyebrow">RONINxBLOCK / НОВЫЙ СЕЗОН</p>
-        <h1>@product.BrandName<br />@product.Name</h1>
-        <p>@(variant?.Name ?? "Новая расцветка"). Культовая модель для города, комфортная посадка и выразительный силуэт.</p>
-        <a class="button" asp-controller="Catalog" asp-action="@(product.IsNew ? "New" : "Hits")">Смотреть подборку <span>→</span></a>
+        <h1>@slide.Brand<br />@slide.Name</h1>
+        <p>@slide.Color. Культовая модель для города, комфортная посадка и выразительный силуэт.</p>
+        <a class="button" asp-controller="Catalog" asp-action="@slide.Action">Смотреть подборку <span>→</span></a>
         <div class="hero-note"><b>10 000+</b><span>покупателей<br />выбирают RONINxBLOCK</span></div>
       </div>
-      <div class="hero-model"><b>@product.BrandName<br />@product.Name</b><span>@(variant?.Name ?? "Новая расцветка")</span></div>
+      <div class="hero-model"><b>@slide.Brand<br />@slide.Name</b><span>@slide.Color</span></div>
     </article>
   }
 
   <div class="hero-controls">
     <button class="hero-arrow" type="button" data-hero-prev aria-label="Предыдущая модель">←</button>
-    <div class="hero-dots">
-      @for (var i = 0; i < slides.Count; i++)
+    <div class="hero-dots" aria-hidden="true">
+      @for (var i = 0; i < slides.Length; i++)
       {
-        <button type="button" class="@(i == 0 ? "is-active" : "")" data-hero-dot="@i" aria-label="Показать модель @(i + 1)"></button>
+        <span class="hero-dot @(i == 0 ? "is-active" : "")" data-hero-dot="@i"></span>
       }
     </div>
     <button class="hero-arrow" type="button" data-hero-next aria-label="Следующая модель">→</button>
@@ -44,21 +47,16 @@
   <div class="hero-progress" aria-label="Индикатор автоматической смены модели"><span></span></div>
 </section>
 
-<section class="content home-catalog" id="catalog" aria-labelledby="home-catalog-title">
+<section class="content home-catalog" id="catalog" aria-labelledby="catalog-title">
   <div class="section-title">
-    <h2 id="home-catalog-title">Все модели</h2>
+    <h2 id="catalog-title">Каталог</h2>
   </div>
-  <div class="grid collection-grid">
-    @foreach (var product in products)
-    {
-      <partial name="_ProductCard" model="product" />
-    }
-  </div>
+  <partial name="_CatalogPlaceholders" />
 </section>
 
 <section class="content edit-grid feature-grid home-promotions">
   <article class="feature-tile feature-tile--triple" data-reveal>
-    <img class="feature-tile__product" src="/images/products/triple-s.jpg" alt="Balenciaga Triple S" loading="lazy" decoding="async" />
+    <img class="feature-tile__advertisement" src="/images/advertising/triple-s.jpg" alt="Balenciaga Triple S" loading="lazy" decoding="async" />
     <div><p class="eyebrow">BALENCIAGA</p><h2>Triple S</h2><a class="button" asp-controller="Catalog" asp-action="New">Смотреть <span>→</span></a></div>
   </article>
   <article class="feature-tile feature-tile--collection" data-reveal>
@@ -75,7 +73,7 @@
         @foreach (var brand in brands)
         {
           <span class="brand-ticker__link brand-ticker__link--@brand.ToLower().Replace(" ", "-")">
-            <partial name="_BrandTickerMark" model="@(new ShoeStore.Models.Brand { Name = brand })" />
+            <partial name="_BrandTickerMark" model="brand" />
           </span>
         }
       </div>

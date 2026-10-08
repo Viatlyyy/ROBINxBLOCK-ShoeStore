@@ -1,43 +1,43 @@
-@model ShoeStore.Models.Brand
+@model string
 @{
-  var key = Model.Name.ToLower().Replace(" ", "-");
+  var key = Model.ToLower().Replace(" ", "-");
 }
 <span class="brand-ticker__mark brand-ticker__mark--@key" aria-hidden="true">
-  @if (Model.Name == "New Balance")
+  @if (Model == "New Balance")
   {
     <svg viewBox="0 0 46 22"><path d="M2 17 8 5h4l4 7 4-7h4l-8 13h-4L8 11l-3 6H2Zm23-12h17v3H25V5Zm0 5h19v3H25v-3Zm0 5h16v3H25v-3Z" /></svg>
   }
-  else if (Model.Name == "Nike")
+  else if (Model == "Nike")
   {
     <svg viewBox="0 0 52 24"><path d="M3 15c9 5 17 4 28-1L49 5C42 16 31 22 18 22 10 22 5 19 3 15Z" /></svg>
   }
-  else if (Model.Name == "Adidas")
+  else if (Model == "Adidas")
   {
     <svg viewBox="0 0 36 27"><path d="m4 18 6-11 5 11H4Zm9 0 5-15 5 15H13Zm9 0 5-19 5 19H22Z" /><path d="M4 22h28v2H4z" /></svg>
   }
-  else if (Model.Name == "ASICS")
+  else if (Model == "ASICS")
   {
     <svg viewBox="0 0 34 24"><ellipse cx="13" cy="12" rx="10" ry="7" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2 16 23 5M10 19 30 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg><b>asics</b>
   }
-  else if (Model.Name == "Salomon")
+  else if (Model == "Salomon")
   {
     <span class="brand-ticker__salomon-icon">S</span><b>SALOMON</b>
   }
-  else if (Model.Name == "Puma")
+  else if (Model == "Puma")
   {
     <svg viewBox="0 0 34 22"><path d="M2 14c6-1 9-8 14-7l5 3 5-1 6 5-8-1-5 5-3-5c-4 4-9 4-14 1Z" /></svg><b>PUMA</b>
   }
-  else if (Model.Name == "Jordan")
+  else if (Model == "Jordan")
   {
     <svg viewBox="0 0 26 26"><circle cx="13" cy="13" r="9" fill="none" stroke="currentColor" stroke-width="2" /><path d="M4 13h18M13 4c3 3 3 15 0 18M13 4c-3 3-3 15 0 18" fill="none" stroke="currentColor" stroke-width="1.4" /></svg><b>JORDAN</b>
   }
-  else if (Model.Name == "Converse")
+  else if (Model == "Converse")
   {
     <svg viewBox="0 0 28 28"><path d="m14 2 3.2 8 8.5.5-6.5 5.5 2.1 8.3-7.3-4.5-7.3 4.5 2.1-8.3-6.5-5.5 8.5-.5L14 2Z" /></svg>
   }
   else
   {
-    <b>@Model.Name</b>
+    <b>@Model</b>
   }
 </span>
-<span class="sr-only">@Model.Name</span>
+<span class="sr-only">@Model</span>

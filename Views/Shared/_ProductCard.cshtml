@@ -1,0 +1,17 @@
+@model ShoeStore.Models.ProductCardViewModel
+
+<article class="product" data-product-card>
+  <div class="image-wrap">
+    @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+    {
+      <img src="@Model.ImageUrl" asp-append-version="true" alt="@Model.BrandName @Model.Name" loading="lazy" decoding="async" />
+    }
+    else
+    {
+      <span class="product-image-empty">Нет фотографии</span>
+    }
+  </div>
+  <p class="brand">@Model.BrandName</p>
+  <h3>@Model.Name</h3>
+  <strong>@Model.Price.ToString("N0") ₽</strong>
+</article>

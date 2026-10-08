@@ -16,14 +16,25 @@ using ShoeStore.Services;
 
 namespace ShoeStore.Tests.Integration;
 
-
 public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly RejectDatabaseConnections databaseGuard = new();
     private readonly Mock<ICatalogQueryService> catalog = new(MockBehavior.Strict);
     public int DatabaseConnectionAttempts => databaseGuard.Attempts;
-    public int CatalogRequestCount => catalog.Invocations.Count;
-    public int RequestedCatalogPage => (int)catalog.Invocations.Single().Arguments[0];
+    public int CatalogRequestCount => catalog.Invocations.Count(call => call.Method.Name == nameof(ICatalogQueryService.GetCatalogAsync));
+    public int RequestedCatalogPage => (int)catalog.Invocations.Single(call => call.Method.Name == nameof(ICatalogQueryService.GetCatalogAsync)).Arguments[0];
+    public HomePageViewModel HomeModel { get; set; } = new()
+    {
+        Products =
+        [
+            new ProductCardViewModel
+            {
+                Id = 7001, Name = "Модель из базы", BrandName = "Тестовый бренд", Price = 12345m,
+                ImageUrl = "/images/hero/9060-urban-feet-v6-960.webp"
+            }
+        ],
+        Brands = HomePageDemoData.Create().Brands
+    };
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -34,7 +45,8 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureTestServices(services =>
         {
-
+            catalog.Setup(service => service.GetHomeAsync(It.IsAny<CancellationToken>()))
+                .Returns(() => Task.FromResult(HomeModel));
             catalog.Setup(service => service.GetCatalogAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns((int page, CancellationToken token) => Task.FromResult(new CatalogPageViewModel
                 {
@@ -42,8 +54,6 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
                 }));
             services.RemoveAll<ICatalogQueryService>();
             services.AddSingleton(catalog.Object);
-
-
             var roles = new Mock<RoleManager<IdentityRole>>(
                 Mock.Of<IRoleStore<IdentityRole>>(), Array.Empty<IRoleValidator<IdentityRole>>(),
                 new UpperInvariantLookupNormalizer(), new IdentityErrorDescriber(),
@@ -52,9 +62,7 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
             services.RemoveAll<RoleManager<IdentityRole>>();
             services.AddSingleton(roles.Object);
 
-
             services.AddDbContext<ApplicationDbContext>(options => options.AddInterceptors(databaseGuard));
-
             services.AddDataProtection().UseEphemeralDataProtectionProvider();
         });
     }

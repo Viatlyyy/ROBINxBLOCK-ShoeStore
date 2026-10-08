@@ -14,13 +14,12 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
             .OrderByDescending(product => product.IsPopular)
             .ThenByDescending(product => product.IsNew)
             .ThenBy(product => product.Id)
-            .Take(16)
             .ToListAsync(cancellationToken);
 
         return new HomePageViewModel
         {
             Products = products,
-            Brands = products.Select(product => product.BrandName).Distinct().Order().ToList()
+            Brands = HomePageDemoData.Create().Brands
         };
     }
 
@@ -59,21 +58,9 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
         Name = product.Name,
         BrandName = product.Brand.Name,
         Price = product.Price,
+        ImageUrl = product.ImageUrl ?? "",
         IsNew = product.IsNew,
         IsPopular = product.IsPopular,
-        Variants = product.Variants
-            .OrderByDescending(variant => variant.IsDefault)
-            .ThenBy(variant => variant.Id)
-            .Select(variant => new ProductCardVariantViewModel
-            {
-                Id = variant.Id,
-                Name = variant.Name,
-                Swatch = variant.Swatch,
-                ImageUrl = variant.ImageUrl,
-                ThumbnailUrl = variant.ThumbnailUrl,
-                IsDefault = variant.IsDefault
-            })
-            .ToList()
     });
 
 }

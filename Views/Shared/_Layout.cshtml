@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="~/css/feature-tiles.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/culture-board.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
@@ -50,7 +51,6 @@
           <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>@avatarLetter</button>
           <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
             <p class="account-menu__email">@displayName</p>
-
             <form asp-controller="Account" asp-action="Logout" method="post">
               <button type="submit" role="menuitem">Выйти</button>
             </form>

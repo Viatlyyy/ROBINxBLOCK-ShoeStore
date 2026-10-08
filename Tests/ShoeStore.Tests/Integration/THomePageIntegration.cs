@@ -4,13 +4,6 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace ShoeStore.Tests.Integration;
 
-
-
-
-
-
-
-
 [TestClass]
 [DoNotParallelize]
 public class THomePageIntegration
@@ -22,8 +15,7 @@ public class THomePageIntegration
     public void Setup()
     {
         application = new HomePageApplicationFactory();
-
-        client = application.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        client = application.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
     }
 
     [TestCleanup]
@@ -43,9 +35,14 @@ public class THomePageIntegration
     }
 
     [TestMethod]
-    public async Task Home_RendersCatalogAndSixteenPlaceholders()
+    [TestCategory("CatalogTiles")]
+    public async Task Home_RendersCatalogDataWithoutReplacingHero()
     {
-        var html = await client.GetStringAsync("/");
+        using var response = await client.GetAsync("/");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsNull(response.Headers.Location);
+        Assert.AreEqual("text/html", response.Content.Headers.ContentType?.MediaType);
+        var html = await response.Content.ReadAsStringAsync();
         var text = WebUtility.HtmlDecode(html);
 
         StringAssert.Contains(html, "id=\"catalog\"");
@@ -56,8 +53,22 @@ public class THomePageIntegration
         StringAssert.Contains(text, "3XL");
         StringAssert.Contains(text, "Dunk Low");
         Assert.AreEqual(3, Regex.Matches(html, "<article class=\"hero-slide").Count);
-        Assert.AreEqual(16, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
-        Assert.AreEqual(0, Regex.Matches(html, "data-product-card").Count);
+        var cards = Regex.Matches(html, "<article[^>]*data-product-card[^>]*>([\\s\\S]*?)</article>");
+        Assert.AreEqual(1, cards.Count);
+        StringAssert.Contains(WebUtility.HtmlDecode(cards[0].Value), "Модель из базы");
+        StringAssert.Contains(WebUtility.HtmlDecode(cards[0].Value), "Тестовый бренд");
+        Assert.AreEqual("12345", string.Concat(WebUtility.HtmlDecode(Regex.Match(cards[0].Value, "<strong>([^<]+)</strong>").Groups[1].Value).Where(char.IsDigit)));
+        StringAssert.Contains(cards[0].Value, "/images/hero/9060-urban-feet-v6-960.webp");
+        Assert.AreEqual(0, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
+        Assert.IsFalse(html.Contains("data-variant-choice", StringComparison.Ordinal));
+        foreach (Match card in cards)
+            Assert.IsFalse(Regex.IsMatch(card.Value, "<(?:a|button|input|select)\\b|\\bonclick\\s*=", RegexOptions.IgnoreCase));
+        var image = Regex.Match(cards[0].Value, "<img[^>]*src=\"([^\"]+)\"");
+        Assert.IsTrue(image.Success);
+        using var photo = await client.GetAsync(WebUtility.HtmlDecode(image.Groups[1].Value));
+        Assert.AreEqual(HttpStatusCode.OK, photo.StatusCode);
+        Assert.IsTrue(photo.Content.Headers.ContentType?.MediaType?.StartsWith("image/", StringComparison.Ordinal) == true);
+        Assert.IsGreaterThan(0, (await photo.Content.ReadAsByteArrayAsync()).Length);
     }
 
     [TestMethod]
@@ -108,21 +119,6 @@ public class THomePageIntegration
     }
 
     [TestMethod]
-    public async Task Home_PlaceholdersRemainInactive()
-    {
-        var html = await client.GetStringAsync("/");
-
-        Assert.IsFalse(Regex.IsMatch(html, "href=\"[^\"]*Catalog/Details", RegexOptions.IgnoreCase));
-        Assert.AreEqual(16, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
-        Assert.IsFalse(html.Contains("data-variant-choice", StringComparison.Ordinal));
-        var placeholders = Regex.Matches(html, "<article class=\"placeholder-card\">([\\s\\S]*?)</article>");
-        foreach (Match placeholder in placeholders)
-            Assert.IsFalse(Regex.IsMatch(placeholder.Value, "<(?:a|button)\\b", RegexOptions.IgnoreCase));
-        using var response = await client.GetAsync("/Catalog/Details/1");
-        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-    }
-
-    [TestMethod]
     public async Task HomeAndCatalog_DoNotAttemptDatabaseConnections()
     {
         using var home = await client.GetAsync("/");
@@ -138,6 +134,19 @@ public class THomePageIntegration
         }
         Assert.AreEqual(1, application.CatalogRequestCount);
         Assert.AreEqual(0, application.DatabaseConnectionAttempts);
+    }
+
+    [TestMethod]
+    [TestCategory("CatalogTiles")]
+    public async Task Home_EmptyCatalogShowsMessageInsteadOfPlaceholders()
+    {
+        application.HomeModel.Products.Clear();
+
+        var html = await client.GetStringAsync("/");
+
+        StringAssert.Contains(WebUtility.HtmlDecode(html), "В каталоге пока нет товаров.");
+        Assert.AreEqual(0, Regex.Matches(html, "data-product-card").Count);
+        Assert.AreEqual(0, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
     }
 
     private static bool IsLocalResource(string path) =>

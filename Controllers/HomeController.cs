@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Data;
+using ShoeStore.Services;
 
 namespace ShoeStore.Controllers;
 
-public class HomeController : Controller
+public class HomeController(ICatalogQueryService catalog) : Controller
 {
-    public IActionResult Index() => View(HomePageDemoData.Create());
-
+    public async Task<IActionResult> Index(CancellationToken cancellationToken = default) =>
+        View(await catalog.GetHomeAsync(cancellationToken));
 
     public IActionResult Error() => View();
 }

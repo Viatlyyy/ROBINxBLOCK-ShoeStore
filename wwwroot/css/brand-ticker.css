@@ -1,0 +1,180 @@
+.brand-ticker {
+  position: relative;
+  overflow: hidden;
+  border-block: 1px solid #ececec;
+  background: #fff;
+}
+
+.brand-ticker::before,
+.brand-ticker::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  width: min(10vw, 130px);
+  pointer-events: none;
+}
+
+.brand-ticker::before {
+  left: 0;
+  background: linear-gradient(90deg, #fff 10%, transparent);
+}
+
+.brand-ticker::after {
+  right: 0;
+  background: linear-gradient(270deg, #fff 10%, transparent);
+}
+
+.brand-ticker__track {
+  display: flex;
+  width: max-content;
+  transform: translateX(-16.6666667%);
+  animation: brand-ticker-move 32s linear infinite;
+}
+
+.brand-ticker.is-paused .brand-ticker__track {
+  animation-play-state: paused;
+}
+
+.brand-ticker__group {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 48px;
+  width: max-content;
+  padding: 48px 48px 48px 0;
+}
+
+.brand-ticker__link {
+  display: inline-flex;
+  min-width: 112px;
+  justify-content: center;
+  color: #171717;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.8px;
+  line-height: 1;
+  text-transform: uppercase;
+  transition: transform .3s cubic-bezier(.16, 1, .3, 1), opacity .3s ease;
+}
+
+.brand-ticker__link:hover,
+.brand-ticker__link:focus-visible {
+  opacity: .48;
+  outline: none;
+  transform: scale(1.08);
+}
+
+.brand-ticker__link--adidas span,
+.brand-ticker__link--asics span {
+  font-size: 21px;
+  font-style: italic;
+  letter-spacing: -1.5px;
+  text-transform: lowercase;
+}
+
+.brand-ticker__link--new-balance span {
+  font-size: 17px;
+  letter-spacing: -1.1px;
+}
+
+.brand-ticker__link--nike span {
+  font-size: 20px;
+  font-style: italic;
+  letter-spacing: -1px;
+}
+
+.brand-ticker__link--puma span {
+  font-size: 19px;
+  font-style: italic;
+}
+
+.brand-ticker__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  color: #151515;
+}
+
+.brand-ticker__mark svg {
+  display: block;
+  width: 43px;
+  height: 34px;
+  fill: currentColor;
+  flex: 0 0 auto;
+}
+
+.brand-ticker__mark--new-balance svg { width: 58px; }
+.brand-ticker__mark--nike svg { width: 63px; }
+.brand-ticker__mark--adidas svg { width: 40px; }
+.brand-ticker__mark--converse svg { width: 33px; }
+.brand-ticker__mark--asics svg { width: 38px; }
+
+.brand-ticker__mark b {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.6px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.brand-ticker__mark--asics b {
+  font-size: 22px;
+  font-style: italic;
+  letter-spacing: -1.4px;
+  text-transform: lowercase;
+}
+
+.brand-ticker__mark--salomon b { font-size: 16px; letter-spacing: -.9px; }
+.brand-ticker__mark--puma b { font-size: 18px; font-style: italic; }
+.brand-ticker__mark--jordan b { font-size: 16px; }
+
+.brand-ticker__salomon-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 16px !important;
+  font-style: italic;
+  font-weight: 800;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes brand-ticker-move {
+  from { transform: translateX(-16.6666667%); }
+  to { transform: translateX(0); }
+}
+
+@media (max-width: 760px) {
+  .brand-ticker__group {
+    gap: 30px;
+    padding: 32px 30px 32px 0;
+  }
+
+  .brand-ticker__link {
+    min-width: 105px;
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-ticker__track {
+    animation: brand-ticker-move 32s linear infinite !important;
+    animation-duration: 32s !important;
+  }
+}

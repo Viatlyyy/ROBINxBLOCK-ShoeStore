@@ -1,0 +1,23 @@
+
+
+
+
+
+
+
+
+
+.home-culture,
+.edit-grid {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+
+
+  .button,
+  .light-button,
+  .header a { transition-duration: .2s !important; }
+}

@@ -1,7 +1,8 @@
 @{
   var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-  // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
+  var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
+    && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
 }
@@ -12,24 +13,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>@ViewData["Title"] — RONINxBLOCK</title>
   <link rel="preload" href="~/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
+  @if (isHome)
+  {
+    <link rel="preload" as="image" href="/images/hero/9060-urban-feet-v6-960.webp" imagesrcset="/images/hero/9060-urban-feet-v6-960.webp 960w, /images/hero/9060-urban-feet-v6-1600.webp 1600w" imagesizes="100vw" fetchpriority="high" />
+  }
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/storefront.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/placeholders.css" asp-append-version="true" />
+  @if (isHome)
+  {
+    <link rel="stylesheet" href="~/css/brand-ticker.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/feature-tiles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/culture-board.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
+  }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
 </head>
 <body class="is-page-entering">
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
-    <nav>
-      <a href="#" aria-disabled="true">Каталог</a>
-      <a href="#" aria-disabled="true">Новинки</a>
-      <a href="#" aria-disabled="true">Хиты</a>
+    <nav aria-label="Основная навигация">
+      <a asp-controller="Catalog" asp-action="New">Новинки</a>
+      <a asp-controller="Catalog" asp-action="Hits">Хиты</a>
     </nav>
     <div class="header-actions">
       @if (User.Identity?.IsAuthenticated == true)
       {
-        // Имя пришло из claim при регистрации. Для аккаунтов без имени используем запасной вариант.
         var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value;
         displayName = string.IsNullOrWhiteSpace(displayName) ? "Пользователь" : displayName.Trim();
         var avatarLetter = displayName[..1].ToUpperInvariant();
@@ -37,7 +50,7 @@
           <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>@avatarLetter</button>
           <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
             <p class="account-menu__email">@displayName</p>
-            @* Form Tag Helper добавит токен для POST-выхода; ссылка GET сессию не завершает. *@
+
             <form asp-controller="Account" asp-action="Logout" method="post">
               <button type="submit" role="menuitem">Выйти</button>
             </form>
@@ -51,8 +64,33 @@
     </div>
   </header>
   <main>@RenderBody()</main>
+  <footer class="store-footer" id="contacts">
+    <div class="store-footer__grid">
+      <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a></div>
+      <nav aria-label="Навигация в футере">
+        <h2>Магазин</h2>
+        <a asp-controller="Catalog" asp-action="New">Новинки</a>
+        <a asp-controller="Catalog" asp-action="Hits">Хиты</a>
+        <a asp-controller="Account" asp-action="Login">Личный кабинет</a>
+      </nav>
+      <div>
+        <h2>Контакты</h2>
+        <a class="store-footer__phone" href="tel:+79180566359">8 (918) 056-63-59</a>
+        <address>Новороссийск, ул. Толстого, 2/4<br />Парк имени М. В. Фрунзе</address>
+        <a class="store-footer__website" href="https://vk.ru/public216238112" target="_blank" rel="noopener noreferrer">ВКонтакте ↗</a>
+      </div>
+    </div>
+    <div class="store-footer__bottom"><span>© @DateTime.Now.Year RONINxBLOCK</span></div>
+  </footer>
   @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
   @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
+  <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>
+  @if (isHome)
+  {
+    <script src="~/js/hero-carousel.js" asp-append-version="true"></script>
+    <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
+    <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
+  }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
 </body>
 </html>

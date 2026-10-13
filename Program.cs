@@ -5,9 +5,13 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Data;
 using ShoeStore.Models;
+using ShoeStore.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
+
 
 builder.Services.AddDbContext<ApplicationDbContext>((services, options) =>
 {

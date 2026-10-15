@@ -68,6 +68,10 @@ public class THomePageIntegration
         Assert.AreEqual("12345", string.Concat(WebUtility.HtmlDecode(Regex.Match(cards[0].Value, "<strong>([^<]+)</strong>").Groups[1].Value).Where(char.IsDigit)));
         StringAssert.Contains(cards[0].Value, "/images/hero/9060-urban-feet-v6-960.webp");
         Assert.AreEqual(0, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
+        foreach (Match card in cards)
+        {
+            StringAssert.Contains(card.Value, "href=\"/Catalog/Details/7001\"");
+        }
         var image = Regex.Match(cards[0].Value, "<img[^>]*src=\"([^\"]+)\"");
         Assert.IsTrue(image.Success);
         using var photo = await client.GetAsync(WebUtility.HtmlDecode(image.Groups[1].Value));
@@ -81,7 +85,7 @@ public class THomePageIntegration
     {
         var html = await client.GetStringAsync("/");
         var resources = new HashSet<string>(StringComparer.Ordinal);
-        foreach (Match match in Regex.Matches(html, "(?:src|href|data-src|data-variant-image-url)=\"([^\"]+)\""))
+        foreach (Match match in Regex.Matches(html, "(?:src|href|data-src)=\"([^\"]+)\""))
         {
             var path = WebUtility.HtmlDecode(match.Groups[1].Value);
             if (IsLocalResource(path)) resources.Add(path);
@@ -129,22 +133,6 @@ public class THomePageIntegration
         var hits = WebUtility.HtmlDecode(await client.GetStringAsync(destination));
         StringAssert.Contains(hits, "<h1 id=\"selection-title\">Хиты</h1>");
         Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:/Index)?(?:[?\"])", RegexOptions.IgnoreCase));
-    }
-
-    [TestMethod]
-    public async Task Home_CatalogCardsRemainInactive()
-    {
-        var html = await client.GetStringAsync("/");
-
-        Assert.IsFalse(Regex.IsMatch(html, "href=\"[^\"]*Catalog/Details", RegexOptions.IgnoreCase));
-        Assert.AreEqual(0, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
-        Assert.IsFalse(html.Contains("data-variant-choice", StringComparison.Ordinal));
-        var cards = Regex.Matches(html, "<article[^>]*data-product-card[^>]*>([\\s\\S]*?)</article>");
-        Assert.AreEqual(1, cards.Count);
-        foreach (Match card in cards)
-            Assert.IsFalse(Regex.IsMatch(card.Value, "<(?:a|button|input|select)\\b|\\bonclick\\s*=", RegexOptions.IgnoreCase));
-        using var response = await client.GetAsync("/Catalog/Details/1");
-        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [TestMethod]

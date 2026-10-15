@@ -1,0 +1,74 @@
+@model ShoeStore.Models.Product
+@{
+  ViewData["Title"] = $"{Model.Brand.Name} {Model.Name}";
+  const string ImageRevision = "20260913-3xl-reframe";
+  string VersionedImageUrl(string imageUrl) => $"{imageUrl}{(imageUrl.Contains('?') ? '&' : '?')}v={ImageRevision}";
+  string OptimizedGalleryUrl(string imageUrl) => imageUrl.StartsWith("/images/gallery/", StringComparison.OrdinalIgnoreCase)
+    && imageUrl.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+      ? $"/images/gallery/optimized/{System.IO.Path.GetFileNameWithoutExtension(imageUrl)}.jpg"
+      : imageUrl;
+  var selected = Model.Variants.OrderByDescending(v => v.IsDefault).ThenBy(v => v.Id).FirstOrDefault();
+  var mainImage = !string.IsNullOrWhiteSpace(selected?.ImageUrl) ? selected.ImageUrl : Model.ImageUrl;
+  var images = new List<string>();
+  if (!string.IsNullOrWhiteSpace(mainImage)) images.Add(mainImage);
+  if (selected is not null)
+    images.AddRange(selected.GalleryImages.OrderBy(image => image.SortOrder).ThenBy(image => image.Id)
+      .Select(image => OptimizedGalleryUrl(image.ImageUrl)).Where(url => !string.IsNullOrWhiteSpace(url)));
+  images = images.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+  var sizes = selected?.Sizes.Where(size => size.StockQuantity > 0).OrderBy(size => size.Size).ToList() ?? [];
+}
+
+<section class="details content">
+  <div class="detail-gallery" data-product-gallery>
+    <div class="detail-image" role="group" aria-label="Галерея фотографий @Model.Brand.Name @Model.Name">
+      @if (images.Count > 0)
+      {
+        <img src="@VersionedImageUrl(images[0])" alt="@Model.Brand.Name @Model.Name" data-gallery-main decoding="async" draggable="false" />
+        <img class="gallery-image-buffer" alt="" data-gallery-buffer aria-hidden="true" draggable="false" />
+        <button class="gallery-control gallery-control--previous" type="button" data-gallery-previous aria-label="Предыдущее фото" hidden>←</button>
+        <button class="gallery-control gallery-control--next" type="button" data-gallery-next aria-label="Следующее фото" hidden>→</button>
+        <span class="gallery-counter" data-gallery-counter aria-live="polite">1 / @images.Count</span>
+      }
+      else
+      {
+        <span class="product-image-empty">Нет фотографии</span>
+      }
+    </div>
+    <div class="gallery-thumbnails" aria-label="Фотографии модели">
+        <div class="gallery-thumbnails__group">
+          @for (var imageIndex = 0; imageIndex < images.Count; imageIndex++)
+          {
+            var galleryImage = VersionedImageUrl(images[imageIndex]);
+            <button class="gallery-thumbnail @(imageIndex == 0 ? "is-active" : "")" type="button" data-gallery-image data-gallery-source="@galleryImage" aria-label="Фото @(imageIndex + 1) товара @Model.Name" aria-pressed="@(imageIndex == 0 ? "true" : "false")">
+              <img src="@galleryImage" alt="" width="65" height="65" loading="lazy" decoding="async" fetchpriority="low" />
+            </button>
+          }
+        </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="eyebrow">@Model.Brand.Name</p>
+    <h1>@Model.Name</h1>
+    <h2>@Model.Price.ToString("N0") ₽</h2>
+    <p class="description">@Model.Description</p>
+    <div class="product-options" role="group" aria-label="Параметры товара">
+      <label>Выберите размер</label>
+      <div class="sizes">
+        @foreach (var size in sizes)
+        {
+          <label><input type="radio" name="size" value="@size.Size" /> <span>@size.Size</span></label>
+        }
+        @if (sizes.Count == 0) { <p class="size-empty">Нет в наличии</p> }
+      </div>
+      <div class="product-order-controls">
+        <div class="quantity-picker" data-quantity-picker aria-label="Количество товара">
+          <button type="button" aria-label="Уменьшить количество" data-quantity-decrease>−</button>
+          <input type="number" name="quantity" value="1" min="1" max="10" readonly aria-label="Количество" data-quantity-input />
+          <button type="button" aria-label="Увеличить количество" data-quantity-increase>+</button>
+        </div>
+        <button class="button product-order-controls__submit" type="button">Добавить в корзину</button>
+      </div>
+    </div>
+  </div>
+</section>

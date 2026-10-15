@@ -118,17 +118,23 @@ public class THomePageIntegration
     }
 
     [TestMethod]
-    public async Task Home_CommunityArrowOpensHits()
+    public async Task Home_PromotionalLinksOpenHomeCatalog()
     {
-        var html = await client.GetStringAsync("/");
-        var communityLink = Regex.Match(html, "<a\\b[^>]*class=\"culture-board__community\"[^>]*>");
-        Assert.IsTrue(communityLink.Success);
-        var destination = Regex.Match(communityLink.Value, "href=\"([^\"]+)\"").Groups[1].Value;
-
-        Assert.AreEqual("/Catalog/Hits", destination);
-        var hits = WebUtility.HtmlDecode(await client.GetStringAsync(destination));
-        StringAssert.Contains(hits, "<h1 id=\"selection-title\">Хиты</h1>");
-        Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:/Index)?(?:[?\"])", RegexOptions.IgnoreCase));
+        foreach (var path in new[] { "/", "/Home/Sort?tag=new&sort=price-asc" })
+        {
+            var html = await client.GetStringAsync(path);
+            var allModelsLink = Regex.Match(html, "<a\\b[^>]*href=\"([^\"]+)\"[^>]*>\\s*Все модели");
+            Assert.IsTrue(allModelsLink.Success);
+            var destination = WebUtility.HtmlDecode(allModelsLink.Groups[1].Value);
+            Assert.AreEqual("/#catalog", destination);
+            var catalogLinks = Regex.Matches(html, "<a\\b[^>]*href=\"([^\"]*#catalog)\"[^>]*>");
+            Assert.AreEqual(11, catalogLinks.Count, "Ссылки баннеров, фотографий, «Все модели» и «Сбросить» должны вести к каталогу.");
+            foreach (Match link in catalogLinks)
+                Assert.AreEqual(destination, WebUtility.HtmlDecode(link.Groups[1].Value));
+            Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:[/#?\"])", RegexOptions.IgnoreCase));
+            var catalogHtml = await client.GetStringAsync(destination);
+            StringAssert.Contains(catalogHtml, "id=\"catalog\"");
+        }
     }
 
     [TestMethod]

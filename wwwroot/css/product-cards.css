@@ -51,3 +51,34 @@
   .product { transition-duration: .28s !important; }
   .product img { transition-duration: .38s !important; }
 }
+
+.product-badges {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #111;
+  pointer-events: none;
+}
+.product-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+}
+.product-badge--new {
+  padding: 0 5px;
+  background: rgba(255, 255, 255, .94);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+.product-badge--popular { width: 24px; height: 24px; }
+.product-badge--popular svg { display: block; width: 24px; height: 24px; }
+@media (max-width: 760px) {
+  .product-badges { top: 8px; left: 8px; gap: 5px; }
+  .product-badge--new { font-size: 10px; }
+}

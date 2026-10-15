@@ -49,6 +49,12 @@ public sealed class HomePageApplicationFactory : WebApplicationFactory<Program>
             catalog.Setup(service => service.GetHomeAsync(It.IsAny<CancellationToken>()))
                 .Returns(() => Task.FromResult(HomeModel));
 
+            catalog.Setup(service => service.GetHomeAsync(It.IsAny<CatalogSelection>(), It.IsAny<CancellationToken>()))
+                .Returns((CatalogSelection selection, CancellationToken token) => Task.FromResult(new HomePageViewModel
+                {
+                    Products = HomeModel.Products, Brands = HomeModel.Brands, Selection = selection
+                }));
+
             catalog.Setup(service => service.GetCatalogAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
                 .Returns((int page, CancellationToken token) => Task.FromResult(new CatalogPageViewModel
                 {

@@ -3,6 +3,8 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
+  var isProductDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
+    && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
@@ -34,6 +36,12 @@
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
+  @if (isProductDetails)
+  {
+    <link rel="stylesheet" href="~/css/product-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/product-gallery.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/quantity-picker.css" asp-append-version="true" />
+  }
 </head>
 <body class="is-page-entering">
   <header class="header">
@@ -95,5 +103,10 @@
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
   }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
+  @if (isProductDetails)
+  {
+    <script src="~/js/product-gallery.js" asp-append-version="true"></script>
+    <script src="~/js/quantity-picker.js" asp-append-version="true"></script>
+  }
 </body>
 </html>

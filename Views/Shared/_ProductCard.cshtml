@@ -1,6 +1,7 @@
 @model ShoeStore.Models.ProductCardViewModel
 
 <article class="product" data-product-card>
+  <a class="product-card__link" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" aria-label="Открыть @Model.BrandName @Model.Name">
   <div class="image-wrap">
     @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
     {
@@ -14,4 +15,5 @@
   <p class="brand">@Model.BrandName</p>
   <h3>@Model.Name</h3>
   <strong>@Model.Price.ToString("N0") ₽</strong>
+  </a>
 </article>

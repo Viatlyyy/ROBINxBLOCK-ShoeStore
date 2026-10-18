@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ShoeStore.Data;
 using ShoeStore.Models;
 using ShoeStore.Services;
@@ -39,7 +40,8 @@ public class TCatalogQueryService
         db.ChangeTracker.Clear();
         var before = await database.CatalogSnapshotAsync();
 
-        var result = await new CatalogQueryService(db).GetHomeAsync(CancellationToken.None);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var result = await new CatalogQueryService(db, cache).GetHomeAsync(CancellationToken.None);
 
         Assert.HasCount(18, result.Products);
         CollectionAssert.AreEquivalent(Enumerable.Range(1, 18).ToArray(), result.Products.Select(product => product.Id).ToArray());

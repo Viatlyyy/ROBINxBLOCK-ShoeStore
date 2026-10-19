@@ -1,0 +1,55 @@
+.product-order-controls {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.quantity-picker {
+  display: grid;
+  grid-template-columns: 54px 64px 54px;
+  height: 52px;
+  overflow: hidden;
+  border: 1px solid #d5d5d5;
+  border-radius: 7px;
+}
+
+.quantity-picker button {
+  border: 0;
+  background: #111;
+  color: #fff;
+  font: 700 21px/1 Inter, Arial, sans-serif;
+  cursor: default;
+}
+
+.quantity-picker input {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-inline: 1px solid #d5d5d5;
+  background: #fff;
+  color: #111;
+  font: 500 15px Inter, Arial, sans-serif;
+  text-align: center;
+}
+
+.product-order-controls__submit {
+  min-width: 220px;
+  padding-inline: 25px;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .product-order-controls {
+    flex-direction: column;
+  }
+
+  .quantity-picker {
+    width: 100%;
+    grid-template-columns: 1fr 72px 1fr;
+  }
+
+  .product-order-controls__submit {
+    width: 100%;
+  }
+}

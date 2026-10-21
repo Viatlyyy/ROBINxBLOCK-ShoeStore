@@ -3,6 +3,7 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
+  isHome = isHome || ViewData["IsHomePage"] is true;
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
     && (action.Equals("Login", StringComparison.OrdinalIgnoreCase) || action.Equals("Register", StringComparison.OrdinalIgnoreCase));
@@ -29,6 +30,7 @@
     <link rel="stylesheet" href="~/css/culture-board.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/catalog-controls.css" asp-append-version="true" />
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
@@ -38,10 +40,6 @@
 <body class="is-page-entering">
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
-    <nav aria-label="Основная навигация">
-      <a asp-controller="Catalog" asp-action="New">Новинки</a>
-      <a asp-controller="Catalog" asp-action="Hits">Хиты</a>
-    </nav>
     <div class="header-actions">
       @if (User.Identity?.IsAuthenticated == true)
       {
@@ -72,8 +70,6 @@
       <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a></div>
       <nav aria-label="Навигация в футере">
         <h2>Магазин</h2>
-        <a asp-controller="Catalog" asp-action="New">Новинки</a>
-        <a asp-controller="Catalog" asp-action="Hits">Хиты</a>
         <a asp-controller="Account" asp-action="Login">Личный кабинет</a>
       </nav>
       <div>

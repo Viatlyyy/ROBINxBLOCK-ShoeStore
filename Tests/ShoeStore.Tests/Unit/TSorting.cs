@@ -10,27 +10,44 @@ public class TSorting
     [TestCategory("Sorting")]
     public void ApplySelection_New_ReturnsOnlyNewCards()
     {
-        var result = ProductQuery.ApplySelection(CreateCards(), new CatalogSelection("new", "default")).ToArray();
+        var cards = new[]
+        {
+            new ProductCardViewModel { Id = 1, IsNew = true },
+            new ProductCardViewModel { Id = 2, IsNew = false }
+        }.AsQueryable();
 
-        CollectionAssert.AreEquivalent(new[] { 1, 3 }, result.Select(product => product.Id).ToArray());
-        Assert.IsTrue(result.All(product => product.IsNew));
+        var result = ProductQuery.ApplySelection(cards, new CatalogSelection("new", "default"));
+
+        CollectionAssert.AreEqual(new[] { 1 }, result.Select(product => product.Id).ToArray());
     }
 
     [TestMethod]
     [TestCategory("Sorting")]
     public void ApplySelection_Popular_ReturnsOnlyPopularCards()
     {
-        var result = ProductQuery.ApplySelection(CreateCards(), new CatalogSelection("popular", "default")).ToArray();
+        var cards = new[]
+        {
+            new ProductCardViewModel { Id = 1, IsPopular = false },
+            new ProductCardViewModel { Id = 2, IsPopular = true }
+        }.AsQueryable();
 
-        CollectionAssert.AreEquivalent(new[] { 2, 3 }, result.Select(product => product.Id).ToArray());
-        Assert.IsTrue(result.All(product => product.IsPopular));
+        var result = ProductQuery.ApplySelection(cards, new CatalogSelection("popular", "default"));
+
+        CollectionAssert.AreEqual(new[] { 2 }, result.Select(product => product.Id).ToArray());
     }
 
     [TestMethod]
     [TestCategory("Sorting")]
     public void ApplySelection_PriceAscending_OrdersFromCheapestToMostExpensive()
     {
-        var result = ProductQuery.ApplySelection(CreateCards(), new CatalogSelection("all", "price-asc"));
+        var cards = new[]
+        {
+            new ProductCardViewModel { Id = 2, Price = 50m },
+            new ProductCardViewModel { Id = 1, Price = 20m },
+            new ProductCardViewModel { Id = 3, Price = 70m }
+        }.AsQueryable();
+
+        var result = ProductQuery.ApplySelection(cards, new CatalogSelection("all", "price-asc"));
 
         CollectionAssert.AreEqual(new[] { 1, 2, 3 }, result.Select(product => product.Id).ToArray());
     }
@@ -39,15 +56,15 @@ public class TSorting
     [TestCategory("Sorting")]
     public void ApplySelection_PriceDescending_OrdersFromMostExpensiveToCheapest()
     {
-        var result = ProductQuery.ApplySelection(CreateCards(), new CatalogSelection("all", "price-desc"));
+        var cards = new[]
+        {
+            new ProductCardViewModel { Id = 2, Price = 50m },
+            new ProductCardViewModel { Id = 1, Price = 20m },
+            new ProductCardViewModel { Id = 3, Price = 70m }
+        }.AsQueryable();
+
+        var result = ProductQuery.ApplySelection(cards, new CatalogSelection("all", "price-desc"));
 
         CollectionAssert.AreEqual(new[] { 3, 2, 1 }, result.Select(product => product.Id).ToArray());
     }
-
-    private static IQueryable<ProductCardViewModel> CreateCards() => new[]
-    {
-        new ProductCardViewModel { Id = 2, Price = 50m, IsPopular = true },
-        new ProductCardViewModel { Id = 1, Price = 20m, IsNew = true },
-        new ProductCardViewModel { Id = 3, Price = 70m, IsNew = true, IsPopular = true }
-    }.AsQueryable();
 }

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Npgsql;
 using ShoeStore.Data;
 using ShoeStore.Models;
 using ShoeStore.Services;
@@ -6,74 +8,64 @@ using ShoeStore.Services;
 namespace ShoeStore.Tests.Integration;
 
 [TestClass]
-[DoNotParallelize]
 public class TSortingDatabase
 {
-    private static TemporaryPostgreSql database = null!;
-    private static DbContextOptions<ApplicationDbContext> options = null!;
-
-    [ClassInitialize]
-    public static async Task Setup(TestContext context)
-    {
-        database = await TemporaryPostgreSql.StartAsync();
-        try
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "ShoeStore.csproj")))
-                directory = directory.Parent;
-            if (directory is null) throw new DirectoryNotFoundException("Не найден веб-проект.");
-            await database.ImportSchemaAsync(Path.Combine(directory.FullName, "Database", "shoestore-schema.sql"));
-            options = new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(database.ConnectionString).Options;
-            await using var db = new ApplicationDbContext(options);
-            db.Brands.Add(new Brand { Id = 1, Name = "Учебный бренд" });
-            db.Categories.Add(new Category { Id = 1, Name = "Кроссовки" });
-            db.Products.AddRange(
-                CreateProduct(1, 20m, false, true, ProductStatus.Active),
-                CreateProduct(4, 50m, true, false, ProductStatus.Active),
-                CreateProduct(8, 70m, true, true, ProductStatus.Active),
-                CreateProduct(5, 5m, true, true, ProductStatus.Active),
-                CreateProduct(2, 1m, true, true, ProductStatus.Draft),
-                CreateProduct(7, 999m, true, true, ProductStatus.Archived));
-            await db.SaveChangesAsync();
-        }
-        catch
-        {
-            await database.DisposeAsync();
-            throw;
-        }
-    }
-
-    [ClassCleanup]
-    public static async Task Cleanup() => await database.DisposeAsync();
-
     [TestMethod]
     [TestCategory("Sorting")]
     public async Task GetHomeAsync_PostgreSqlFiltersAndOrdersWithoutChangingData()
     {
-        var before = await database.CatalogSnapshotAsync();
-        await using var db = new ApplicationDbContext(options);
-
-        var catalog = new CatalogQueryService(db);
-        var selections = new[]
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), optional: true)
+            .AddUserSecrets<Program>(optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+        var connectionString = configuration["SHOESTORE_TEST_CONNECTION_STRING"]
+            ?? configuration.GetConnectionString("DefaultConnection");
+        Assert.IsFalse(string.IsNullOrWhiteSpace(connectionString),
+            "Настройте ConnectionStrings:DefaultConnection для веб-проекта ShoeStore.");
+        var settings = new NpgsqlConnectionStringBuilder(connectionString)
         {
-            (Tag: "new", Sort: "price-asc", Expected: new[] { 5, 4, 8 }),
-            (Tag: "popular", Sort: "price-desc", Expected: new[] { 8, 1, 5 })
+            Pooling = false,
+            SearchPath = "pg_temp"
         };
-        foreach (var selection in selections)
-        {
-            var model = await catalog.GetHomeAsync(
-                new CatalogSelection(selection.Tag, selection.Sort), CancellationToken.None);
+        await using var connection = new NpgsqlConnection(settings.ConnectionString);
+        await connection.OpenAsync();
 
-            CollectionAssert.AreEqual(selection.Expected,
-                model.Products.Select(product => product.Id).ToArray(),
-                $"Фильтр {selection.Tag}, сортировка {selection.Sort}");
-        }
-        Assert.AreEqual(before, await database.CatalogSnapshotAsync());
+        // Временные таблицы существуют только в этом подключении.
+        await using var setup = new NpgsqlCommand("""
+            CREATE TEMP TABLE "Brands" ("Id" integer PRIMARY KEY, "Name" text);
+            CREATE TEMP TABLE "Products" (
+                "Id" integer PRIMARY KEY, "BrandId" integer, "Name" text,
+                "Price" numeric(10, 2), "ImageUrl" text DEFAULT '',
+                "IsNew" boolean, "IsPopular" boolean, "Status" text);
+            INSERT INTO "Brands" VALUES (1, 'Тестовый бренд');
+            INSERT INTO "Products" ("Id", "BrandId", "Name", "Price", "IsNew", "IsPopular", "Status")
+            VALUES
+                (1, 1, 'Модель 1', 20, false, true, 'Active'),
+                (4, 1, 'Модель 4', 50, true, false, 'Active'),
+                (8, 1, 'Модель 8', 70, true, true, 'Active'),
+                (5, 1, 'Модель 5', 5, true, true, 'Active'),
+                (2, 1, 'Черновик', 1, true, true, 'Draft'),
+                (7, 1, 'Архивный товар', 999, true, true, 'Archived');
+            """, connection);
+        await setup.ExecuteNonQueryAsync();
+
+        await using var snapshot = new NpgsqlCommand("""
+            SELECT jsonb_build_object(
+                'products', (SELECT jsonb_agg(to_jsonb(p) ORDER BY p."Id") FROM "Products" p),
+                'brands', (SELECT jsonb_agg(to_jsonb(b) ORDER BY b."Id") FROM "Brands" b))::text
+            """, connection);
+        var before = (string)(await snapshot.ExecuteScalarAsync())!;
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(connection).Options;
+        await using var db = new ApplicationDbContext(options);
+        var catalog = new CatalogQueryService(db);
+
+        var newProducts = await catalog.GetHomeAsync(new CatalogSelection("new", "price-asc"), CancellationToken.None);
+        CollectionAssert.AreEqual(new[] { 5, 4, 8 }, newProducts.Products.Select(product => product.Id).ToArray());
+
+        var popularProducts = await catalog.GetHomeAsync(new CatalogSelection("popular", "price-desc"), CancellationToken.None);
+        CollectionAssert.AreEqual(new[] { 8, 1, 5 }, popularProducts.Products.Select(product => product.Id).ToArray());
+
+        Assert.AreEqual(before, (string)(await snapshot.ExecuteScalarAsync())!);
     }
-
-    private static Product CreateProduct(int id, decimal price, bool isNew, bool isPopular, ProductStatus status) => new()
-    {
-        Id = id, Name = "Модель " + id, Description = "Описание", BrandId = 1, CategoryId = 1,
-        Price = price, IsNew = isNew, IsPopular = isPopular, Status = status, ImageUrl = "/images/products/9060.jpg"
-    };
 }

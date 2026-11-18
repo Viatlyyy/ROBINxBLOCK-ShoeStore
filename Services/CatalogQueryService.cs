@@ -10,11 +10,10 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
 
     public async Task<HomePageViewModel> GetHomeAsync(CatalogSelection selection, CancellationToken cancellationToken)
     {
-        var products = await ProductQuery.ApplySelection(CardQuery(), selection)
-            .ToListAsync(cancellationToken);
+        var cards = await CardQuery().ToListAsync(cancellationToken);
         return new HomePageViewModel
         {
-            Products = products,
+            Products = ProductQuery.ApplySelection(cards, selection).ToList(),
             Brands = HomePageDemoData.Create().Brands,
             Selection = selection
         };

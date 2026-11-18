@@ -4,7 +4,8 @@ namespace ShoeStore.Services;
 
 public static class ProductQuery
 {
-    public static IQueryable<ProductCardViewModel> ApplySelection(IQueryable<ProductCardViewModel> products, CatalogSelection selection)
+    public static IEnumerable<ProductCardViewModel> ApplySelection(
+        IEnumerable<ProductCardViewModel> products, CatalogSelection selection)
     {
         var query = selection.Tag switch
         {
@@ -12,6 +13,15 @@ public static class ProductQuery
             "popular" => products.Where(product => product.IsPopular),
             _ => products
         };
+
+        if (selection.SearchText.Length > 0)
+            query = query.Where(product =>
+                product.Name.Contains(selection.SearchText, StringComparison.OrdinalIgnoreCase)
+                || product.BrandName.Contains(selection.SearchText, StringComparison.OrdinalIgnoreCase));
+
+        if (selection.BrandIds.Count > 0)
+            query = query.Where(product => selection.BrandIds.Contains(product.BrandId));
+
         return selection.Sort switch
         {
             "price-asc" => query.OrderBy(product => product.Price).ThenBy(product => product.Id),

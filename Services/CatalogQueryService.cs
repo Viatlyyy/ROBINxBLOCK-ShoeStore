@@ -1,20 +1,22 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using ShoeStore.Data;
 using ShoeStore.Models;
 
 namespace ShoeStore.Services;
 
-public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQueryService
+public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache cache) : ICatalogQueryService
 {
     public const int CatalogPageSize = 24;
+    private const string PublishedCardIdsKey = "Catalog.PublishedCardIds";
+    private static readonly SemaphoreSlim ReloadCatalog = new(1, 1);
 
     public async Task<HomePageViewModel> GetHomeAsync(CatalogSelection selection, CancellationToken cancellationToken)
     {
-        var products = await ProductQuery.ApplySelection(CardQuery(), selection)
-            .ToListAsync(cancellationToken);
+        var cards = await GetPublishedCardsAsync(cancellationToken);
         return new HomePageViewModel
         {
-            Products = products,
+            Products = ProductQuery.ApplySelection(cards, selection).ToList(),
             Brands = HomePageDemoData.Create().Brands,
             Selection = selection
         };
@@ -59,6 +61,55 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
             TotalPages = totalPages
         };
     }
+
+    private async Task<List<ProductCardViewModel>> GetPublishedCardsAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var cards = ReadCachedCards();
+        if (cards is not null)
+            return cards;
+
+        await ReloadCatalog.WaitAsync(cancellationToken);
+        try
+        {
+            cards = ReadCachedCards();
+            if (cards is not null)
+                return cards;
+
+            cards = await CardQuery().ToListAsync(cancellationToken);
+            foreach (var card in cards)
+                cache.Set((typeof(ProductCardViewModel), card.Id), card);
+
+            cache.Set(PublishedCardIdsKey, cards.Select(card => card.Id).ToArray());
+            return cards;
+        }
+        finally
+        {
+            ReloadCatalog.Release();
+        }
+    }
+
+    private List<ProductCardViewModel>? ReadCachedCards()
+    {
+        var ids = cache.Get<int[]>(PublishedCardIdsKey);
+        if (ids is null)
+            return null;
+
+        var cards = new List<ProductCardViewModel>(ids.Length);
+        foreach (var id in ids)
+        {
+            var card = GetProduct(id);
+            if (card is null)
+                return null;
+
+            cards.Add(card);
+        }
+
+        return cards;
+    }
+
+    private ProductCardViewModel? GetProduct(int id) =>
+        cache.Get<ProductCardViewModel>((typeof(ProductCardViewModel), id));
 
     private IQueryable<ProductCardViewModel> CardQuery() => ToCards(
         db.Products.AsNoTracking().Where(product => product.Status == ProductStatus.Active));

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 using ShoeStore.Data;
@@ -58,7 +59,8 @@ public class TSortingDatabase
         var before = (string)(await snapshot.ExecuteScalarAsync())!;
         var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(connection).Options;
         await using var db = new ApplicationDbContext(options);
-        var catalog = new CatalogQueryService(db);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var catalog = new CatalogQueryService(db, cache);
 
         var newProducts = await catalog.GetHomeAsync(new CatalogSelection("new", "price-asc"), CancellationToken.None);
         CollectionAssert.AreEqual(new[] { 5, 4, 8 }, newProducts.Products.Select(product => product.Id).ToArray());

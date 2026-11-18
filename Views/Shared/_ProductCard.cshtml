@@ -10,6 +10,20 @@
     {
       <span class="product-image-empty">Нет фотографии</span>
     }
+    <div class="product-badges">
+      @if (Model.IsNew)
+      {
+        <span class="product-badge product-badge--new" data-product-badge="new" aria-label="Новинка">NEW</span>
+      }
+      @if (Model.IsPopular)
+      {
+        <span class="product-badge product-badge--popular" data-product-badge="popular" aria-label="Хит">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M12 2 14.5 9.5 22 12 14.5 14.5 12 22 9.5 14.5 2 12 9.5 9.5Z" />
+          </svg>
+        </span>
+      }
+    </div>
   </div>
   <p class="brand">@Model.BrandName</p>
   <h3>@Model.Name</h3>

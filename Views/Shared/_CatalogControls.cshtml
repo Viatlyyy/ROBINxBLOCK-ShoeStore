@@ -1,0 +1,22 @@
+@model ShoeStore.Models.CatalogSelection
+
+<form class="catalog-controls" asp-controller="Home" asp-action="Sort" asp-fragment="catalog" method="get" aria-label="Выбор товаров и сортировки">
+  <div class="catalog-control">
+    <label for="catalog-tag">Товары</label>
+    <select id="catalog-tag" name="tag">
+      <option value="all" selected="@(Model.Tag == "all")">Все</option>
+      <option value="new" selected="@(Model.Tag == "new")">Новое</option>
+      <option value="popular" selected="@(Model.Tag == "popular")">Популярное</option>
+    </select>
+  </div>
+  <div class="catalog-control">
+    <label for="catalog-sort">Сортировка</label>
+    <select id="catalog-sort" name="sort">
+      <option value="default" selected="@(Model.Sort == "default")">По умолчанию</option>
+      <option value="price-asc" selected="@(Model.Sort == "price-asc")">Цена по возрастанию</option>
+      <option value="price-desc" selected="@(Model.Sort == "price-desc")">Цена по убыванию</option>
+    </select>
+  </div>
+  <button class="catalog-submit" type="submit">Показать</button>
+  <a class="catalog-reset" asp-controller="Home" asp-action="Index" asp-fragment="catalog">Сбросить</a>
+</form>

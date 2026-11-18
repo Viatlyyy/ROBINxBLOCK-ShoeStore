@@ -8,6 +8,18 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
 {
     public const int CatalogPageSize = 24;
 
+    public async Task<HomePageViewModel> GetHomeAsync(CatalogSelection selection, CancellationToken cancellationToken)
+    {
+        var products = await ProductQuery.ApplySelection(CardQuery(), selection)
+            .ToListAsync(cancellationToken);
+        return new HomePageViewModel
+        {
+            Products = products,
+            Brands = HomePageDemoData.Create().Brands,
+            Selection = selection
+        };
+    }
+
     public async Task<HomePageViewModel> GetHomeAsync(CancellationToken cancellationToken)
     {
         var products = await CardQuery()

@@ -52,8 +52,20 @@
   <div class="section-title">
     <h2 id="catalog-title">Каталог</h2>
   </div>
-  <partial name="_CatalogControls" model="Model.Selection" />
-  <partial name="_CatalogProducts" model="Model.Products" />
+  <div class="catalog-search">
+    <label for="catalog-search">Поиск по названию или бренду</label>
+    <input id="catalog-search" form="catalog-filters" name="search" type="search"
+           value="@Model.Selection.SearchText" placeholder="Например, Dunk или New Balance" />
+  </div>
+  <div class="catalog-layout">
+    <partial name="_CatalogControls" model="Model" />
+    <div class="catalog-content">
+      <p class="catalog-empty" id="catalog-error" role="status" hidden>Не удалось обновить каталог. Попробуйте ещё раз.</p>
+      <div id="catalog-results" data-url="@Url.Action("SearchResults", "Home")">
+        <partial name="_CatalogProducts" model="Model" />
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="content edit-grid feature-grid home-promotions">

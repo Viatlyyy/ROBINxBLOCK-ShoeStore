@@ -15,24 +15,16 @@ public sealed class CatalogQueryService(ApplicationDbContext db) : ICatalogQuery
         {
             Products = ProductQuery.ApplySelection(cards, selection).ToList(),
             Brands = HomePageDemoData.Create().Brands,
+            CatalogBrands = cards.GroupBy(card => card.BrandId)
+                .OrderBy(brand => brand.First().BrandName)
+                .ThenBy(brand => brand.Key)
+                .ToDictionary(brand => brand.Key, brand => brand.First().BrandName),
             Selection = selection
         };
     }
 
-    public async Task<HomePageViewModel> GetHomeAsync(CancellationToken cancellationToken)
-    {
-        var products = await CardQuery()
-            .OrderByDescending(product => product.IsPopular)
-            .ThenByDescending(product => product.IsNew)
-            .ThenBy(product => product.Id)
-            .ToListAsync(cancellationToken);
-
-        return new HomePageViewModel
-        {
-            Products = products,
-            Brands = HomePageDemoData.Create().Brands
-        };
-    }
+    public Task<HomePageViewModel> GetHomeAsync(CancellationToken cancellationToken) =>
+        GetHomeAsync(CatalogSelection.FromQuery(null, null), cancellationToken);
 
     public async Task<CatalogPageViewModel> GetCatalogAsync(
         int page,

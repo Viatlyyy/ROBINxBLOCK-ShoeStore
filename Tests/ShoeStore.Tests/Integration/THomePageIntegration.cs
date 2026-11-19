@@ -191,26 +191,11 @@ public class THomePageIntegration
             Assert.AreEqual(10, catalogLinks.Count, "Ссылки баннеров, фотографий и «Все модели» должны вести к каталогу.");
             foreach (Match link in catalogLinks)
                 Assert.AreEqual(destination, WebUtility.HtmlDecode(link.Groups[1].Value));
-            Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:[/#?\"])", RegexOptions.IgnoreCase));
+            Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:/(?:Index|New|Hits))?/?(?:[#?\"])", RegexOptions.IgnoreCase));
+            StringAssert.Contains(html, "href=\"/Catalog/Details/7001\"");
             var catalogHtml = await client.GetStringAsync(destination);
             StringAssert.Contains(catalogHtml, "id=\"catalog\"");
         }
-    }
-
-    [TestMethod]
-    public async Task Home_CatalogCardsRemainInactive()
-    {
-        var html = await client.GetStringAsync("/");
-
-        Assert.IsFalse(Regex.IsMatch(html, "href=\"[^\"]*Catalog/Details", RegexOptions.IgnoreCase));
-        Assert.AreEqual(0, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
-        Assert.IsFalse(html.Contains("data-variant-choice", StringComparison.Ordinal));
-        var cards = Regex.Matches(html, "<article[^>]*data-product-card[^>]*>([\\s\\S]*?)</article>");
-        Assert.AreEqual(1, cards.Count);
-        foreach (Match card in cards)
-            Assert.IsFalse(Regex.IsMatch(card.Value, "<(?:a|button|input|select)\\b|\\bonclick\\s*=", RegexOptions.IgnoreCase));
-        using var response = await client.GetAsync("/Catalog/Details/1");
-        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [TestMethod]

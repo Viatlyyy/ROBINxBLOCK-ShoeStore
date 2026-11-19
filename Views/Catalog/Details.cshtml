@@ -1,0 +1,62 @@
+@model ShoeStore.Models.ProductCardViewModel
+@{
+  ViewData["Title"] = $"{Model.BrandName} {Model.Name}";
+  const string ImageRevision = "20260913-3xl-reframe";
+  string VersionedImageUrl(string imageUrl) => $"{imageUrl}{(imageUrl.Contains('?') ? '&' : '?')}v={ImageRevision}";
+  var images = Model.GalleryImageUrls;
+}
+
+<section class="details content">
+  <div class="detail-gallery" data-product-gallery>
+    <div class="detail-image" role="group" aria-label="Галерея фотографий @Model.BrandName @Model.Name">
+      @if (images.Count > 0)
+      {
+        <img src="@VersionedImageUrl(images[0])" alt="@Model.BrandName @Model.Name" data-gallery-main decoding="async" draggable="false" />
+        <img class="gallery-image-buffer" alt="" data-gallery-buffer aria-hidden="true" draggable="false" />
+        <button class="gallery-control gallery-control--previous" type="button" data-gallery-previous aria-label="Предыдущее фото" hidden>←</button>
+        <button class="gallery-control gallery-control--next" type="button" data-gallery-next aria-label="Следующее фото" hidden>→</button>
+        <span class="gallery-counter" data-gallery-counter aria-live="polite">1 / @images.Count</span>
+      }
+      else
+      {
+        <span class="product-image-empty">Нет фотографии</span>
+      }
+    </div>
+    <div class="gallery-thumbnails" aria-label="Фотографии модели">
+        <div class="gallery-thumbnails__group">
+          @for (var imageIndex = 0; imageIndex < images.Count; imageIndex++)
+          {
+            var galleryImage = VersionedImageUrl(images[imageIndex]);
+            <button class="gallery-thumbnail @(imageIndex == 0 ? "is-active" : "")" type="button" data-gallery-image data-gallery-source="@galleryImage" aria-label="Фото @(imageIndex + 1) товара @Model.Name" aria-pressed="@(imageIndex == 0 ? "true" : "false")">
+              <img src="@galleryImage" alt="" width="65" height="65" loading="lazy" decoding="async" fetchpriority="low" />
+            </button>
+          }
+        </div>
+    </div>
+  </div>
+
+  <div>
+    <p class="eyebrow">@Model.BrandName</p>
+    <h1>@Model.Name</h1>
+    <h2>@Model.Price.ToString("N0") ₽</h2>
+    <p class="description">@Model.Description</p>
+    <div class="product-options" role="group" aria-label="Параметры товара">
+      <span>Размер</span>
+      <div class="sizes">
+        <button class="size-placeholder" type="button" disabled>Выберите размер</button>
+      </div>
+      <div class="product-order-controls">
+        <div class="quantity-picker" aria-label="Количество товара">
+          <button type="button" aria-label="Уменьшить количество" disabled>−</button>
+          <input type="text" value="1" readonly disabled aria-label="Количество" />
+          <button type="button" aria-label="Увеличить количество" disabled>+</button>
+        </div>
+        <button class="button product-order-controls__submit" type="button" disabled>Добавить в корзину</button>
+      </div>
+    </div>
+  </div>
+  <section class="product-reviews" aria-labelledby="product-reviews-title">
+    <h2 id="product-reviews-title">Отзывы</h2>
+    <p>Раздел отзывов будет доступен позже.</p>
+  </section>
+</section>

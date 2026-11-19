@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
 using ShoeStore.Data;
 using ShoeStore.Models;
@@ -33,12 +34,22 @@ public class TSortingDatabase
 
         // Временные таблицы существуют только в этом подключении.
         await using var setup = new NpgsqlCommand("""
-            CREATE TEMP TABLE "Brands" ("Id" integer PRIMARY KEY, "Name" text);
+            CREATE TEMP TABLE "Brands" ("Id" integer PRIMARY KEY, "Name" text, "Description" text);
             CREATE TEMP TABLE "Products" (
                 "Id" integer PRIMARY KEY, "BrandId" integer, "Name" text,
                 "Price" numeric(10, 2), "ImageUrl" text DEFAULT '',
-                "IsNew" boolean, "IsPopular" boolean, "Status" text);
-            INSERT INTO "Brands" VALUES (1, 'Тестовый бренд');
+                "IsNew" boolean, "IsPopular" boolean, "Status" text,
+                "Description" text DEFAULT '', "OldPrice" numeric(10, 2),
+                "CategoryId" integer DEFAULT 1, "CreatedAt" timestamptz DEFAULT now(),
+                "UpdatedAt" timestamptz DEFAULT now());
+            CREATE TEMP TABLE "ProductVariants" (
+                "Id" integer PRIMARY KEY, "ProductId" integer, "Name" text,
+                "Sku" text, "Swatch" text, "ImageUrl" text, "ThumbnailUrl" text,
+                "IsDefault" boolean);
+            CREATE TEMP TABLE "ProductVariantImages" (
+                "Id" integer PRIMARY KEY, "ProductVariantId" integer,
+                "ImageUrl" text, "ThumbnailUrl" text, "SortOrder" integer);
+            INSERT INTO "Brands" ("Id", "Name") VALUES (1, 'Тестовый бренд');
             INSERT INTO "Products" ("Id", "BrandId", "Name", "Price", "IsNew", "IsPopular", "Status")
             VALUES
                 (1, 1, 'Модель 1', 20, false, true, 'Active'),
@@ -58,7 +69,8 @@ public class TSortingDatabase
         var before = (string)(await snapshot.ExecuteScalarAsync())!;
         var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseNpgsql(connection).Options;
         await using var db = new ApplicationDbContext(options);
-        var catalog = new CatalogQueryService(db);
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var catalog = new CatalogQueryService(db, cache);
 
         var newProducts = await catalog.GetHomeAsync(new CatalogSelection("new", "price-asc"), CancellationToken.None);
         CollectionAssert.AreEqual(new[] { 5, 4, 8 }, newProducts.Products.Select(product => product.Id).ToArray());
@@ -67,5 +79,18 @@ public class TSortingDatabase
         CollectionAssert.AreEqual(new[] { 8, 1, 5 }, popularProducts.Products.Select(product => product.Id).ToArray());
 
         Assert.AreEqual(before, (string)(await snapshot.ExecuteScalarAsync())!);
+
+        await connection.CloseAsync();
+        var offlineOptions = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql("Host=127.0.0.1;Port=1;Database=unused;Username=unused;Timeout=1").Options;
+        await using var offlineDb = new ApplicationDbContext(offlineOptions);
+        var nextRequest = new CatalogQueryService(offlineDb, cache);
+        var search = await nextRequest.GetHomeAsync(
+            CatalogSelection.FromQuery("popular", "price-desc", " МОДЕЛЬ ", [1]), CancellationToken.None);
+        CollectionAssert.AreEqual(new[] { 8, 1, 5 }, search.Products.Select(product => product.Id).ToArray());
+        CollectionAssert.AreEqual(new[] { 1 }, search.CatalogBrands.Keys.ToArray());
+        Assert.AreSame(newProducts.Products.Single(product => product.Id == 5), nextRequest.GetProduct(5));
+        Assert.IsNull(nextRequest.GetProduct(2));
+        Assert.IsNull(nextRequest.GetProduct(7));
     }
 }

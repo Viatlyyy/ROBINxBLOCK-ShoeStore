@@ -3,6 +3,8 @@
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
+  var isProductDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
+    && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
   isHome = isHome || ViewData["IsHomePage"] is true;
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
@@ -31,6 +33,12 @@
     <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/catalog-controls.css" asp-append-version="true" />
+  }
+  @if (isProductDetails)
+  {
+    <link rel="stylesheet" href="~/css/product-details.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/product-gallery.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/quantity-picker.css" asp-append-version="true" />
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
@@ -90,6 +98,7 @@
     <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
   }
+  @if (isProductDetails) { <script src="~/js/product-gallery.js" asp-append-version="true"></script> }
   @if (isHome) { <script src="~/js/catalog-search.js" asp-append-version="true" defer></script> }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
 </body>

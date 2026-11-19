@@ -10,6 +10,7 @@ using ShoeStore.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
 
 

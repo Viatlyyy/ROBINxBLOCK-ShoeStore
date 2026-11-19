@@ -9,20 +9,23 @@ public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache ca
 {
     public const int CatalogPageSize = 24;
 
-    public async Task<HomePageViewModel> GetHomeAsync(CancellationToken cancellationToken)
+    public async Task<HomePageViewModel> GetHomeAsync(CatalogSelection selection, CancellationToken cancellationToken)
     {
-        var products = await LoadCardsAsync(db.Products.AsNoTracking()
-            .Where(product => product.Status == ProductStatus.Active)
-            .OrderByDescending(product => product.IsPopular)
-            .ThenByDescending(product => product.IsNew)
-            .ThenBy(product => product.Id), cancellationToken);
-
+        var cards = await GetPublishedCardsAsync(cancellationToken);
         return new HomePageViewModel
         {
-            Products = products,
-            Brands = HomePageDemoData.Create().Brands
+            Products = ProductQuery.ApplySelection(cards, selection).ToList(),
+            Brands = HomePageDemoData.Create().Brands,
+            CatalogBrands = cards.GroupBy(card => card.BrandId)
+                .OrderBy(brand => brand.First().BrandName)
+                .ThenBy(brand => brand.Key)
+                .ToDictionary(brand => brand.Key, brand => brand.First().BrandName),
+            Selection = selection
         };
     }
+
+    public Task<HomePageViewModel> GetHomeAsync(CancellationToken cancellationToken) =>
+        GetHomeAsync(CatalogSelection.FromQuery(null, null), cancellationToken);
 
     public async Task<CatalogPageViewModel> GetCatalogAsync(
         int page,
@@ -52,6 +55,12 @@ public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache ca
 
     public ProductCardViewModel? GetProduct(int id) =>
         cache.Get<ProductCardViewModel>((typeof(ProductCardViewModel), id));
+
+    private async Task<List<ProductCardViewModel>> GetPublishedCardsAsync(CancellationToken cancellationToken) =>
+        (await cache.GetOrCreateAsync((typeof(ProductCardViewModel), "published"), _ =>
+            LoadCardsAsync(db.Products.AsNoTracking()
+                .Where(product => product.Status == ProductStatus.Active)
+                .OrderBy(product => product.Id), cancellationToken)))!;
 
     private async Task<List<ProductCardViewModel>> LoadCardsAsync(
         IQueryable<Product> query,

@@ -1,0 +1,36 @@
+@model ShoeStore.Models.HomePageViewModel
+
+<form id="catalog-filters" class="catalog-controls" asp-controller="Home" asp-action="Sort"
+      asp-fragment="catalog" method="get" aria-label="Фильтры и сортировка каталога">
+  <div class="catalog-control">
+    <label for="catalog-tag">Товары</label>
+    <select id="catalog-tag" name="tag">
+      <option value="all" selected="@(Model.Selection.Tag == "all")">Все</option>
+      <option value="new" selected="@(Model.Selection.Tag == "new")">Новое</option>
+      <option value="popular" selected="@(Model.Selection.Tag == "popular")">Популярное</option>
+    </select>
+  </div>
+  <div class="catalog-control">
+    <label for="catalog-sort">Сортировка</label>
+    <select id="catalog-sort" name="sort">
+      <option value="default" selected="@(Model.Selection.Sort == "default")">По умолчанию</option>
+      <option value="price-asc" selected="@(Model.Selection.Sort == "price-asc")">Цена по возрастанию</option>
+      <option value="price-desc" selected="@(Model.Selection.Sort == "price-desc")">Цена по убыванию</option>
+    </select>
+  </div>
+  @if (Model.CatalogBrands.Count > 0)
+  {
+    <fieldset class="catalog-brands">
+      <legend>Бренды</legend>
+      @foreach (var brand in Model.CatalogBrands)
+      {
+        <label class="catalog-brand">
+          <input type="checkbox" name="brandIds" value="@brand.Key"
+                 checked="@Model.Selection.BrandIds.Contains(brand.Key)" />
+          <span>@brand.Value</span>
+        </label>
+      }
+    </fieldset>
+  }
+  <button class="catalog-submit" type="submit">Показать</button>
+</form>

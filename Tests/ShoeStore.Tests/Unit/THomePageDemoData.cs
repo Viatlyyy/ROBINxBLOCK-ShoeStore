@@ -10,7 +10,6 @@ public class THomePageDemoData
     {
         var model = HomePageDemoData.Create();
 
-
         Assert.HasCount(16, model.Products);
         CollectionAssert.AreEquivalent(
             new[] { "9060", "3XL", "Dunk Low" },
@@ -29,8 +28,7 @@ public class THomePageDemoData
             Assert.IsFalse(string.IsNullOrWhiteSpace(product.Name), $"Не задано название товара {product.Id}.");
             Assert.IsFalse(string.IsNullOrWhiteSpace(product.BrandName), $"Не задан бренд товара {product.Id}.");
             Assert.IsGreaterThan(0m, product.Price, $"Некорректная цена товара {product.Id}.");
-            Assert.IsNotEmpty(product.Variants, $"Нет изображения расцветки товара {product.Id}.");
-            Assert.HasCount(1, product.Variants.Where(variant => variant.IsDefault).ToArray());
+            Assert.AreEqual(1, product.Variants.Count(variant => variant.IsDefault));
             foreach (var variant in product.Variants)
             {
                 Assert.IsFalse(string.IsNullOrWhiteSpace(variant.Name));
@@ -47,10 +45,7 @@ public class THomePageDemoData
 
         Assert.IsNotEmpty(model.Brands);
         Assert.IsTrue(model.Brands.All(brand => !string.IsNullOrWhiteSpace(brand)));
-        Assert.AreEqual(model.Brands.Count, model.Brands.Distinct(StringComparer.Ordinal).Count());
-        foreach (var brand in model.Brands)
-            Assert.IsTrue(model.Products.Any(product => product.BrandName == brand));
-        foreach (var product in model.Products)
-            CollectionAssert.Contains(model.Brands, product.BrandName);
+        CollectionAssert.AreEquivalent(model.Brands.ToArray(),
+            model.Products.Select(product => product.BrandName).Distinct(StringComparer.Ordinal).ToArray());
     }
 }

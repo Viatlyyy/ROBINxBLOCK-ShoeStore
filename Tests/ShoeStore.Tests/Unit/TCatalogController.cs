@@ -11,6 +11,20 @@ namespace ShoeStore.Tests.Unit;
 public class TCatalogController
 {
     [TestMethod]
+    public void Details_ReturnsNotFound_WhenProductIsMissing()
+    {
+        const int productId = 999;
+        var catalog = new Mock<ICatalogQueryService>(MockBehavior.Strict);
+        catalog.Setup(service => service.GetProduct(productId)).Returns((ProductCardViewModel?)null);
+        var controller = new CatalogController(catalog.Object);
+
+        var result = controller.Details(productId);
+
+        Assert.IsInstanceOfType<NotFoundResult>(result);
+        catalog.Verify(service => service.GetProduct(productId), Times.Once);
+    }
+
+    [TestMethod]
     public void Details_ReturnsSelectedProductModel()
     {
         Assert.AreEqual(typeof(IActionResult), typeof(CatalogController).GetMethod("Details")?.ReturnType);

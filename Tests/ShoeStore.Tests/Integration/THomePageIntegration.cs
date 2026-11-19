@@ -188,7 +188,7 @@ public class THomePageIntegration
             var destination = WebUtility.HtmlDecode(allModelsLink.Groups[1].Value);
             Assert.AreEqual("/#catalog", destination);
             var catalogLinks = Regex.Matches(html, "<a\\b[^>]*href=\"([^\"]*#catalog)\"[^>]*>");
-            Assert.AreEqual(11, catalogLinks.Count, "Ссылки баннеров, фотографий, «Все модели» и «Сбросить» должны вести к каталогу.");
+            Assert.AreEqual(10, catalogLinks.Count, "Ссылки баннеров, фотографий и «Все модели» должны вести к каталогу.");
             foreach (Match link in catalogLinks)
                 Assert.AreEqual(destination, WebUtility.HtmlDecode(link.Groups[1].Value));
             Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:[/#?\"])", RegexOptions.IgnoreCase));

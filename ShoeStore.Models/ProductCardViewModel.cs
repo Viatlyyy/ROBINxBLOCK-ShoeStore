@@ -1,6 +1,6 @@
 namespace ShoeStore.Models;
 
-public sealed class ProductCardViewModel
+public sealed record ProductCardViewModel
 {
     public int Id { get; init; }
     public int BrandId { get; init; }

@@ -48,6 +48,26 @@ public sealed class CartService(ApplicationDbContext db, IHttpContextAccessor ht
         Session.SetString(SessionKey, JsonSerializer.Serialize(items.Take(MaxLines)));
 
 
+    public void Clear()
+    {
+        Session.Remove(SessionKey);
+        Session.Remove("checkout-id");
+        Session.Remove("checkout-lines");
+    }
+
+    public Guid GetCheckoutId(IEnumerable<CartLine> lines)
+    {
+        var snapshot = string.Join(";", lines.OrderBy(line => line.Variant.Id).ThenBy(line => line.Size)
+            .Select(line => FormattableString.Invariant($"{line.Variant.Id}:{line.Size}:{line.Quantity}:{line.Product.Price}")));
+        if (Session.GetString("checkout-lines") == snapshot &&
+            Guid.TryParse(Session.GetString("checkout-id"), out var current)) return current;
+
+        var id = Guid.NewGuid();
+        Session.SetString("checkout-lines", snapshot);
+        Session.SetString("checkout-id", id.ToString());
+        return id;
+    }
+
     public async Task<List<CartLine>> GetLinesAsync(CancellationToken cancellationToken = default)
     {
         var cart = Read(Session);

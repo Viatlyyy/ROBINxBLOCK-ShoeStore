@@ -6,6 +6,9 @@
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
   var isProductDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
+  var isCartIndex = isCart && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
+  var isOrderPage = isCart && (action.Equals("Checkout", StringComparison.OrdinalIgnoreCase)
+    || action.Equals("Success", StringComparison.OrdinalIgnoreCase));
   var cartCount = ShoeStore.Services.CartService.GetCount(Context.Session, initialize: isProductDetails);
   isHome = isHome || ViewData["IsHomePage"] is true;
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
@@ -44,11 +47,12 @@
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/cart-fly.css" asp-append-version="true" />
-  @if (isCart)
+  @if (isCartIndex)
   {
     <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" />
   }
+  @if (isOrderPage) { <link rel="stylesheet" href="~/css/checkout-reference.css" asp-append-version="true" /> }
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
@@ -116,7 +120,7 @@
     <script src="~/js/product-options.js" asp-append-version="true"></script>
     <script src="~/js/cart-fly.js" asp-append-version="true"></script>
   }
-  @if (isCart) { <script src="~/js/cart-quantity.js" asp-append-version="true"></script> }
+  @if (isCartIndex) { <script src="~/js/cart-quantity.js" asp-append-version="true"></script> }
   @if (isHome) { <script src="~/js/catalog-search.js" asp-append-version="true" defer></script> }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
 </body>

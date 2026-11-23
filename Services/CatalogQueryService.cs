@@ -71,6 +71,9 @@ public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache ca
             .Include(product => product.Variants.OrderByDescending(variant => variant.IsDefault)
                 .ThenBy(variant => variant.Id).Take(1))
             .ThenInclude(variant => variant.GalleryImages)
+            .Include(product => product.Variants.OrderByDescending(variant => variant.IsDefault)
+                .ThenBy(variant => variant.Id).Take(1))
+            .ThenInclude(variant => variant.Sizes)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
 
@@ -94,6 +97,11 @@ public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache ca
         return new ProductCardViewModel
         {
             Id = product.Id,
+            VariantId = variant?.Id ?? 0,
+            Sizes = variant?.Sizes.Where(size => size.StockQuantity > 0)
+                .OrderBy(size => size.Size)
+                .Select(size => new ProductSizeViewModel { Id = size.Id, Size = size.Size, StockQuantity = size.StockQuantity })
+                .ToArray() ?? [],
             BrandId = product.BrandId,
             Name = product.Name,
             BrandName = product.Brand.Name,

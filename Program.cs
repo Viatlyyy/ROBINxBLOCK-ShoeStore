@@ -11,6 +11,19 @@ using ShoeStore.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CartService>();
+builder.Services.AddDistributedMemoryCache();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(3);
+    options.Cookie.IsEssential = true;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
 builder.Services.AddScoped<ICatalogQueryService, CatalogQueryService>();
 
 
@@ -132,6 +145,24 @@ app.UseStaticFiles();
 // Только после этого можно решать, разрешён ли доступ к выбранному действию.
 app.UseRouting();
 app.UseRateLimiter();
+var cartGates = Enumerable.Range(0, 128).Select(_ => new SemaphoreSlim(1)).ToArray();
+app.Use(async (context, next) =>
+{
+    var isCart = string.Equals(context.Request.RouteValues["controller"]?.ToString(), "Cart", StringComparison.OrdinalIgnoreCase);
+    var cookie = context.Request.Cookies[".AspNetCore.Session"];
+    if (!isCart || cookie is null)
+    {
+        await next();
+        return;
+    }
+
+    // Одна сессия может менять корзину из двух вкладок. Сохраняем её до следующего изменения.
+    var gate = cartGates[(uint)StringComparer.Ordinal.GetHashCode(cookie) % cartGates.Length];
+    await gate.WaitAsync(context.RequestAborted);
+    try { await next(); }
+    finally { gate.Release(); }
+});
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");

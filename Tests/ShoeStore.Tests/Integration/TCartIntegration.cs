@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Npgsql;
 using ShoeStore.Data;
+using ShoeStore.Models;
+using ShoeStore.Services;
 
 namespace ShoeStore.Tests.Integration;
 
@@ -45,6 +47,13 @@ public class TCartIntegration
             CREATE TEMP TABLE "ProductVariantSizes" ("Id" int, "ProductVariantId" int, "Size" int, "StockQuantity" int);
             CREATE TEMP TABLE "ProductVariantImages" ("Id" int, "ProductVariantId" int, "ImageUrl" text,
                 "ThumbnailUrl" text, "SortOrder" int);
+            CREATE TEMP TABLE "Orders" ("Id" int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                "PublicId" uuid UNIQUE, "UserId" text, "CustomerName" text, "LastName" text, "Email" text,
+                "Phone" text, "DeliveryMethod" text, "City" text, "Street" text, "House" text, "Apartment" text,
+                "Postcode" text, "Comment" text, "PaymentMethod" text, "Status" text, "CreatedAt" timestamptz, "Total" numeric);
+            CREATE TEMP TABLE "OrderItems" ("Id" int GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                "OrderId" int REFERENCES "Orders", "ProductId" int, "ProductVariantId" int, "ProductName" text,
+                "VariantName" text, "Sku" text, "Size" int, "Quantity" int, "Price" numeric, "ImageUrl" text);
             INSERT INTO "Brands" VALUES (1, 'Бренд', '');
             INSERT INTO "Products" VALUES (1, 1, 1, 'Модель', '', 2000, NULL, '', 'Active', true, false, now(), now());
             INSERT INTO "ProductVariants" VALUES (7, 1, 'Основной', 'A', '', '', NULL, true);
@@ -90,6 +99,81 @@ public class TCartIntegration
             ["__RequestVerificationToken"] = token, ["variantId"] = "7", ["size"] = size.ToString(),
             ["quantity"] = quantity.ToString(), ["change"] = change.ToString()
         }));
+
+    [TestMethod]
+    public async Task Checkout_RequiresItemsAndConfirmationWithCurrentQuantity()
+    {
+        Assert.AreEqual(HttpStatusCode.Redirect, (await client.GetAsync("/Cart/Checkout")).StatusCode);
+        (await Post("Add", 37)).EnsureSuccessStatusCode();
+        var html = await client.GetStringAsync("/Cart/Checkout");
+        var confirmation = Regex.Match(html, "name=\"confirmation\" value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.IsTrue(Guid.TryParse(confirmation, out _));
+        (await Post("Add", 37)).EnsureSuccessStatusCode();
+        using var data = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token, ["confirmation"] = confirmation,
+            ["CustomerName"] = "Покупатель", ["Phone"] = "+79000000000",
+            ["DeliveryMethod"] = "Самовывоз", ["PaymentMethod"] = "cash"
+        });
+        var response = await client.PostAsync("/Cart/Checkout", data);
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "Корзина изменилась");
+        StringAssert.Contains(await client.GetStringAsync("/Cart"), "data-cart-line-quantity>2</span>");
+    }
+
+    [TestMethod]
+    public async Task Checkout_SavesOrderOnceClearsCartAndUpdatesStock()
+    {
+        (await Post("Add", 37, 3)).EnsureSuccessStatusCode();
+        var html = await client.GetStringAsync("/Cart/Checkout");
+        var confirmation = Regex.Match(html, "name=\"confirmation\" value=\"([^\"]+)\"").Groups[1].Value;
+        var fields = new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token, ["confirmation"] = confirmation,
+            ["CustomerName"] = "Покупатель", ["Phone"] = "+79000000000", ["DeliveryMethod"] = "Курьер",
+            ["PaymentMethod"] = "cash"
+        };
+        using var invalid = new FormUrlEncodedContent(fields);
+        var validation = await client.PostAsync("/Cart/Checkout", invalid);
+        StringAssert.Contains(WebUtility.HtmlDecode(await validation.Content.ReadAsStringAsync()), "Введите улицу.");
+        fields["City"] = "Москва";
+        fields["Street"] = "Тестовая";
+        fields["House"] = "1";
+        using var first = new FormUrlEncodedContent(fields);
+        using var repeat = new FormUrlEncodedContent(fields);
+        var responses = await Task.WhenAll(client.PostAsync("/Cart/Checkout", first), client.PostAsync("/Cart/Checkout", repeat));
+        foreach (var response in responses) Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        var success = responses.Single(response => response.Headers.Location!.OriginalString.Contains("/Success/"));
+        var receipt = WebUtility.HtmlDecode(await client.GetStringAsync(success.Headers.Location));
+        StringAssert.Contains(receipt, "Заказ №1 создан");
+        Assert.IsFalse(receipt.Contains(fields["Phone"]));
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/Cart/Success/{Guid.NewGuid()}")).StatusCode);
+        Assert.IsFalse((await client.GetStringAsync("/Catalog/Details/1")).Contains("value=\"37\" data-stock"));
+        StringAssert.Contains(WebUtility.HtmlDecode(await client.GetStringAsync("/Cart")), "Корзина пока пуста");
+        await using var check = new NpgsqlCommand("""
+            SELECT count(*) = 1 AND min(o."Total") = 6000 AND min(i."Price") = 2000 AND min(i."Quantity") = 3
+                AND min(i."Size") = 37 AND min(o."Status") = 'Новый' AND min(o."Street") = 'Тестовая'
+                AND (SELECT "StockQuantity" FROM "ProductVariantSizes" WHERE "Size" = 37) = 0
+            FROM "Orders" o JOIN "OrderItems" i ON i."OrderId" = o."Id"
+            """, connection);
+        Assert.AreEqual(true, await check.ExecuteScalarAsync());
+    }
+
+    [TestMethod]
+    public async Task Checkout_RollsBackAllSizesWhenLastPairIsUnavailable()
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product).ThenInclude(p => p.Brand).SingleAsync();
+        var service = scope.ServiceProvider.GetRequiredService<CheckoutService>();
+        var result = await service.PlaceOrderAsync(new CheckoutViewModel(), [
+            new CartLine { Variant = variant, Size = 37, Quantity = 1 },
+            new CartLine { Variant = variant, Size = 50, Quantity = 1 }
+        ], null, Guid.NewGuid(), CancellationToken.None);
+        Assert.IsFalse(result.Success);
+        Assert.AreEqual(3, await db.ProductVariantSizes.Where(s => s.Size == 37).Select(s => s.StockQuantity).SingleAsync());
+        Assert.AreEqual(0, await db.Orders.CountAsync());
+    }
 
     [TestMethod]
     public async Task Cart_CombinesSameSizeSeparatesSizesAndRecalculatesTotal()

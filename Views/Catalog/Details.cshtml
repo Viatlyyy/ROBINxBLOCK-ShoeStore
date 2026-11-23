@@ -40,20 +40,32 @@
     <h1>@Model.Name</h1>
     <h2>@Model.Price.ToString("N0") ₽</h2>
     <p class="description">@Model.Description</p>
-    <div class="product-options" role="group" aria-label="Параметры товара">
+    <form asp-controller="Cart" asp-action="Add" method="post" class="product-options" data-add-to-cart-form data-product-options data-quantity-limit="10" role="group" aria-label="Параметры товара">
+      <input type="hidden" name="variantId" value="@Model.VariantId" />
       <span>Размер</span>
-      <div class="sizes">
-        <button class="size-placeholder" type="button" disabled>Выберите размер</button>
+      <div class="sizes" role="group" aria-label="Доступные размеры">
+        @if (Model.Sizes.Count > 0)
+        {
+          @foreach (var size in Model.Sizes)
+          {
+            <label><input required type="radio" name="size" value="@size.Size" data-stock="@size.StockQuantity" /> <span>@size.Size</span></label>
+          }
+        }
+        else
+        {
+          <p class="sizes-empty">Нет доступных размеров</p>
+        }
       </div>
       <div class="product-order-controls">
         <div class="quantity-picker" aria-label="Количество товара">
-          <button type="button" aria-label="Уменьшить количество" disabled>−</button>
-          <input type="text" value="1" readonly disabled aria-label="Количество" />
-          <button type="button" aria-label="Увеличить количество" disabled>+</button>
+          <button type="button" data-quantity-decrease aria-label="Уменьшить количество" disabled>−</button>
+          <input type="number" name="quantity" value="1" min="1" max="10" data-quantity-input readonly aria-label="Количество" />
+          <button type="button" data-quantity-increase aria-label="Увеличить количество" disabled>+</button>
         </div>
-        <button class="button product-order-controls__submit" type="button" disabled>Добавить в корзину</button>
+        <button class="button product-order-controls__submit" type="submit" disabled="@(Model.Sizes.Count == 0)">Добавить в корзину</button>
       </div>
-    </div>
+      <p data-cart-error role="alert" hidden></p>
+    </form>
   </div>
   <section class="product-reviews" aria-labelledby="product-reviews-title">
     <h2 id="product-reviews-title">Отзывы</h2>

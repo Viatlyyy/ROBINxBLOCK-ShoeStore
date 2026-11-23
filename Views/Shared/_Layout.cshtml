@@ -1,10 +1,12 @@
 @{
   var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+  var isCart = controller.Equals("Cart", StringComparison.OrdinalIgnoreCase);
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
   var isProductDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
+  var cartCount = ShoeStore.Services.CartService.GetCount(Context.Session, initialize: isProductDetails);
   isHome = isHome || ViewData["IsHomePage"] is true;
   // Дополнительные стили и переключатель пароля нужны только на страницах входа и регистрации.
   var isAccountEntry = controller.Equals("Account", StringComparison.OrdinalIgnoreCase)
@@ -41,6 +43,12 @@
     <link rel="stylesheet" href="~/css/quantity-picker.css" asp-append-version="true" />
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/cart-fly.css" asp-append-version="true" />
+  @if (isCart)
+  {
+    <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" />
+  }
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
@@ -49,6 +57,10 @@
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
     <div class="header-actions">
+      <a class="header-icon-button" asp-controller="Cart" asp-action="Index" aria-label="Корзина" title="Корзина">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 4.5h2l1.6 10.1h10.3l2-7.3H6.2M8 19a1.2 1.2 0 1 0 0 2.4A1.2 1.2 0 0 0 8 19Zm8.2 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z" /></svg>
+        <span class="header-cart-count @(cartCount>0?"is-visible":"")" data-cart-count>@cartCount</span>
+      </a>
       @if (User.Identity?.IsAuthenticated == true)
       {
         // Имя пришло из claim при регистрации. Для аккаунтов без имени используем запасной вариант.
@@ -98,7 +110,13 @@
     <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
   }
-  @if (isProductDetails) { <script src="~/js/product-gallery.js" asp-append-version="true"></script> }
+  @if (isProductDetails)
+  {
+    <script src="~/js/product-gallery.js" asp-append-version="true"></script>
+    <script src="~/js/product-options.js" asp-append-version="true"></script>
+    <script src="~/js/cart-fly.js" asp-append-version="true"></script>
+  }
+  @if (isCart) { <script src="~/js/cart-quantity.js" asp-append-version="true"></script> }
   @if (isHome) { <script src="~/js/catalog-search.js" asp-append-version="true" defer></script> }
   <script src="~/js/page-intro.js" asp-append-version="true"></script>
 </body>

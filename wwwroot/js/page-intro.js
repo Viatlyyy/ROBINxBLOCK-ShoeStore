@@ -1,10 +1,12 @@
 (() => {
   const body = document.body;
-  if (!body?.classList.contains('is-page-entering')) return;
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    window.setTimeout(() => {
-      body.classList.remove('is-page-entering');
-      body.classList.add('is-page-ready');
-    }, 100);
-  }));
+  body.classList.add('is-page-entering');
+  document.addEventListener('DOMContentLoaded', () => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        body.classList.remove('is-page-entering');
+        body.classList.add('is-page-ready');
+      }, 100);
+    }));
+  }, { once: true });
 })();

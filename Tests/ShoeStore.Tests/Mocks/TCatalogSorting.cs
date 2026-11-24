@@ -7,7 +7,7 @@ using ShoeStore.Services;
 namespace ShoeStore.Tests.Mocks;
 
 [TestClass]
-public class THomeSorting
+public class TCatalogSorting
 {
     [TestMethod]
     [TestCategory("CatalogSearch")]
@@ -25,7 +25,7 @@ public class THomeSorting
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = (PartialViewResult)await new HomeController(catalog.Object)
+        var result = (PartialViewResult)await new CatalogController(catalog.Object)
             .SearchResults("new", "price-desc", " Dunk ", [10, 20, 10]);
 
         Assert.AreEqual("_CatalogProducts", result.ViewName);
@@ -34,7 +34,7 @@ public class THomeSorting
 
     [TestMethod]
     [TestCategory("Sorting")]
-    public async Task Sort_PreservesSelectionAndCardData()
+    public async Task Index_PreservesSelectionAndCardData()
     {
         var expected = new HomePageViewModel
         {
@@ -47,7 +47,7 @@ public class THomeSorting
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
 
-        var result = (ViewResult)await new HomeController(catalog.Object).Sort("new", "price-asc");
+        var result = (ViewResult)await new CatalogController(catalog.Object).Index("new", "price-asc");
 
         Assert.AreEqual("Index", result.ViewName);
         Assert.AreSame(expected, result.Model);

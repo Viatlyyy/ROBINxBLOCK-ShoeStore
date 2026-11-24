@@ -1,7 +1,7 @@
 @model ShoeStore.Models.HomePageViewModel
 
-<form id="catalog-filters" class="catalog-controls" asp-controller="Home" asp-action="Sort"
-      asp-fragment="catalog" method="get" aria-label="Фильтры и сортировка каталога">
+<form id="catalog-filters" class="catalog-controls" asp-controller="Catalog" asp-action="Index"
+      method="get" aria-label="Фильтры и сортировка каталога">
   <div class="catalog-control">
     <label for="catalog-tag">Товары</label>
     <select id="catalog-tag" name="tag">

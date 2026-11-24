@@ -10,10 +10,10 @@
   let timer;
   let pendingRequest;
 
-  async function updateResults() {
+  async function updateResults(filters = appliedFilters) {
     const request = new AbortController();
     pendingRequest = request;
-    const parameters = new URLSearchParams(appliedFilters);
+    const parameters = new URLSearchParams(filters);
     const searchText = search.value.trim();
     if (searchText) parameters.set('search', searchText);
     else parameters.delete('search');
@@ -29,6 +29,7 @@
       const html = await response.text();
       if (request.signal.aborted) return;
 
+      appliedFilters = filters;
       results.innerHTML = html;
       const pageUrl = new URL(form.action);
       pageUrl.search = parameters.toString();
@@ -48,7 +49,6 @@
     event.preventDefault();
     clearTimeout(timer);
     pendingRequest?.abort();
-    appliedFilters = new URLSearchParams(new FormData(form));
-    void updateResults();
+    void updateResults(new URLSearchParams(new FormData(form)));
   });
 })();

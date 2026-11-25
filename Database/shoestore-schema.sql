@@ -455,4 +455,9 @@ ALTER TABLE ONLY public."Products"
 ALTER TABLE ONLY public."Favorites"
     ADD CONSTRAINT "Favorites_ProductId_fkey" FOREIGN KEY ("ProductId") REFERENCES public."Products"("Id") ON DELETE CASCADE;
 
+CREATE TABLE public."UserAvatars" (
+    "UserId" text PRIMARY KEY REFERENCES public."AspNetUsers"("Id") ON DELETE CASCADE,
+    "Photo" bytea NOT NULL
+);
+
 COMMIT;

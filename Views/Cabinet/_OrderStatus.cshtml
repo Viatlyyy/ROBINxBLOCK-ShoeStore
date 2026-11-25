@@ -1,0 +1,12 @@
+@model string
+@{
+  var status = string.IsNullOrWhiteSpace(Model) ? "Статус не указан" : Model;
+  var icon = status.ToLowerInvariant() switch
+  {
+    "выполнен" or "доставлен" => "check",
+    "отменён" or "отменен" => "close",
+    "в пути" or "отправлен" => "truck",
+    _ => "orders"
+  };
+}
+<span class="account-status"><partial name="_AccountIcon" model="icon" /> @status</span>

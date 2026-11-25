@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductVariantImage> ProductVariantImages => Set<ProductVariantImage>();
     public DbSet<ProductVariantSize> ProductVariantSizes => Set<ProductVariantSize>();
 
+    public DbSet<UserAvatar> UserAvatars => Set<UserAvatar>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
@@ -41,6 +42,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             table.HasCheckConstraint("CK_Products_Price_Positive", "\"Price\" > 0");
             table.HasCheckConstraint("CK_Products_OldPrice", "\"OldPrice\" IS NULL OR \"OldPrice\" > \"Price\"");
         });
+        b.Entity<UserAvatar>().HasKey(x => x.UserId);
+        b.Entity<UserAvatar>().Property(x => x.Photo).HasColumnType("bytea");
+        b.Entity<UserAvatar>().HasOne<ApplicationUser>().WithOne().HasForeignKey<UserAvatar>(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
         b.Entity<Favorite>().Property(x => x.UserId).HasMaxLength(450);
         b.Entity<Favorite>().Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
         b.Entity<Favorite>().HasIndex(x => new { x.UserId, x.ProductId }).IsUnique();

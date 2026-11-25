@@ -16,28 +16,52 @@ namespace ShoeStore.Controllers;
 [Route("Account")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class CabinetController(ApplicationDbContext db, UserManager<ApplicationUser> users,
-    SignInManager<ApplicationUser> signIn, FavoritesService favorites, ILogger<CabinetController> logger) : Controller
+    SignInManager<ApplicationUser> signIn, FavoritesService favorites, ICatalogQueryService catalog,
+    AvatarStore avatars, ILogger<CabinetController> logger) : Controller
 {
     private const int OrdersPerPage = 20;
     private ApplicationUser account = null!;
 
     public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        var user = await users.GetUserAsync(User);
-        if (user is null)
+        var isRead = HttpMethods.IsGet(Request.Method);
+        try
         {
-            await signIn.SignOutAsync();
-            context.Result = Challenge();
-            return;
-        }
+            var user = await users.GetUserAsync(User);
+            if (user is null)
+            {
+                await signIn.SignOutAsync();
+                context.Result = Challenge();
+                return;
+            }
 
-        account = user;
-        await next();
+            account = user;
+            var executed = await next();
+            if (isRead && executed.Exception is DbUpdateException or DbException)
+            {
+                executed.Result = Unavailable(executed.Exception);
+                executed.ExceptionHandled = true;
+            }
+        }
+        catch (Exception error) when (isRead && error is DbUpdateException or DbException)
+        {
+            context.Result = Unavailable(error);
+        }
+    }
+
+    private ViewResult Unavailable(Exception error)
+    {
+        logger.LogWarning("Не удалось загрузить личный кабинет. Тип ошибки {ErrorType}.", error.GetType().Name);
+        Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+        return View(nameof(Unavailable));
     }
 
     private static readonly Expression<Func<Order, AccountOrderSummary>> OrderSummary = order =>
         new AccountOrderSummary(order.PublicId, order.Id, order.CreatedAt, order.Status, order.Total,
-            order.Items.OrderBy(line => line.Id).Select(line => line.ImageUrl).FirstOrDefault());
+            order.Items.OrderBy(line => line.Id).Select(line => line.ImageUrl).FirstOrDefault(),
+            order.Items.OrderBy(line => line.Id).Select(line => line.ProductName).FirstOrDefault(),
+            order.Items.OrderBy(line => line.Id).Select(line => (int?)line.Size).FirstOrDefault(),
+            Math.Max(0, order.Items.Count - 1));
 
     private IQueryable<Order> OwnOrders()
     {
@@ -49,10 +73,15 @@ public sealed class CabinetController(ApplicationDbContext db, UserManager<Appli
     [HttpGet("")]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
-
-        var latest = await OwnOrders().Select(OrderSummary).FirstOrDefaultAsync(cancellationToken);
-        var saved = await favorites.GetProductsAsync(account.Id, 2, cancellationToken);
-        return View(new AccountOverviewViewModel(await ReadProfileAsync(account), latest, saved));
+        var orders = OwnOrders();
+        var orderCount = await orders.CountAsync(cancellationToken);
+        var latest = await orders.Take(3).Select(OrderSummary).ToListAsync(cancellationToken);
+        var favoriteCount = await favorites.CountAsync(account.Id, cancellationToken);
+        var published = await catalog.GetHomeAsync(cancellationToken);
+        var recommendations = published.Products.Where(product => (product.IsPopular || product.IsNew)
+            && product.Variants.Any(variant => variant.Sizes.Count > 0)).Take(3).ToArray();
+        return View(new AccountOverviewViewModel(await ReadProfileAsync(account), orderCount, favoriteCount,
+            latest, recommendations));
     }
 
     [HttpGet("Profile")]
@@ -96,6 +125,33 @@ public sealed class CabinetController(ApplicationDbContext db, UserManager<Appli
 
         await signIn.RefreshSignInAsync(account);
         TempData["ProfileSaved"] = "Контактные данные сохранены.";
+        return RedirectToAction(nameof(Profile));
+    }
+
+    [HttpGet("Avatar")]
+    public async Task<IActionResult> Avatar(CancellationToken cancellationToken)
+    {
+        var photo = await avatars.ReadAsync(account.Id, cancellationToken);
+        return photo is null ? NotFound() : File(photo, AvatarStore.ContentType);
+    }
+
+    [HttpPost("Avatar"), ValidateAntiForgeryToken]
+    [RequestSizeLimit(AvatarStore.MaxRequestBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = AvatarStore.MaxRequestBytes)]
+    public async Task<IActionResult> UploadAvatar([FromForm] IFormFile? photo, CancellationToken cancellationToken)
+    {
+        string? error;
+        try
+        {
+            error = await avatars.SaveAsync(account.Id, photo, cancellationToken);
+        }
+        catch (Exception failure) when (failure is IOException or DbException)
+        {
+            logger.LogWarning("Не удалось записать фото профиля. Тип ошибки {ErrorType}.", failure.GetType().Name);
+            error = "Не удалось сохранить фото. Повторите попытку.";
+        }
+
+        TempData[error is null ? "AvatarSaved" : "AvatarError"] = error ?? "Фото профиля обновлено.";
         return RedirectToAction(nameof(Profile));
     }
 

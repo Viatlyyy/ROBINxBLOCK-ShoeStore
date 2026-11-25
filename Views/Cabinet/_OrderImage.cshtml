@@ -1,11 +1,8 @@
 @model string
-@if (string.IsNullOrWhiteSpace(Model))
-{
-  <span class="account-order-image account-order-image--empty">Нет фото</span>
-}
-else
-{
-  <div class="account-order-image">
-    <img src="@Model" alt="" width="224" height="160" data-product-photo="compact" loading="lazy" decoding="async" />
-  </div>
-}
+<div class="account-order-image" aria-hidden="true">
+  <span class="account-photo-placeholder"><partial name="_AccountIcon" model='"photo"' /></span>
+  @if (!string.IsNullOrWhiteSpace(Model))
+  {
+    <img src="@Model" alt="" width="224" height="160" data-product-photo="compact" data-account-photo loading="lazy" decoding="async" />
+  }
+</div>

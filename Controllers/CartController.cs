@@ -1,10 +1,14 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using ShoeStore.Data;
 using ShoeStore.Models;
 using ShoeStore.Services;
 
 namespace ShoeStore.Controllers;
 
-public class CartController(CartService cart, ICatalogQueryService catalog) : Controller
+public class CartController(CartService cart, ICatalogQueryService catalog, CheckoutService checkout, ApplicationDbContext db) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
@@ -46,6 +50,51 @@ public class CartController(CartService cart, ICatalogQueryService catalog) : Co
         return Json(new { lineCount = lines.Count, quantity = line?.Quantity ?? 0, lineTotal = line?.Total ?? 0, total = lines.Sum(x => x.Total), count = lines.Sum(x => x.Quantity) });
     }
 
+    [HttpGet]
+    public async Task<IActionResult> Checkout(CancellationToken cancellationToken)
+    {
+        var lines = await cart.GetLinesAsync(cancellationToken);
+        if (!lines.Any()) return RedirectToAction(nameof(Index));
+        ViewData["Confirmation"] = cart.GetCheckoutId(lines);
+        return View(new CheckoutViewModel { Lines = lines });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("checkout")]
+    public async Task<IActionResult> Checkout([Bind("CustomerName,LastName,Email,Phone,DeliveryMethod,City,Street,House,Apartment,Postcode,Comment,PaymentMethod")] CheckoutViewModel vm, Guid confirmation, CancellationToken cancellationToken)
+    {
+        var lines = await cart.GetLinesAsync(cancellationToken);
+        vm.Lines = lines;
+        if (lines.Count == 0)
+        {
+            TempData["Message"] = "Корзина пуста. Проверьте доступность товаров перед оформлением.";
+            return RedirectToAction(nameof(Index));
+        }
+        var current = cart.GetCheckoutId(lines);
+        ViewData["Confirmation"] = current;
+        if (confirmation != current)
+            ModelState.AddModelError("", "Корзина изменилась. Проверьте состав и сумму перед подтверждением.");
+        if (!ModelState.IsValid) return View(vm);
+        var result = await checkout.PlaceOrderAsync(vm, lines, User.FindFirstValue(ClaimTypes.NameIdentifier), confirmation, cancellationToken);
+        if (!result.Success)
+        {
+            vm.Lines = await cart.GetLinesAsync(cancellationToken);
+            ViewData["Confirmation"] = cart.GetCheckoutId(vm.Lines);
+            ModelState.AddModelError("", result.Error!);
+            return View(vm);
+        }
+        cart.Clear();
+        return RedirectToAction(nameof(Success), new { id = result.PublicId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Success(Guid id, CancellationToken cancellationToken)
+    {
+        var order = await db.Orders.AsNoTracking()
+            .Where(item => item.PublicId == id)
+            .Select(item => new OrderSuccessViewModel { OrderNumber = item.Id, PublicId = item.PublicId })
+            .FirstOrDefaultAsync(cancellationToken);
+        return order is null ? NotFound() : View(order);
+    }
     private bool IsAjax() => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
     private IActionResult AddFailure(string message)

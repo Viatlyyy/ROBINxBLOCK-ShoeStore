@@ -1,6 +1,6 @@
 namespace ShoeStore.Models;
 
-public sealed class ProductSizeViewModel
+public sealed record ProductSizeViewModel
 {
     public int Id { get; init; }
     public int Size { get; init; }

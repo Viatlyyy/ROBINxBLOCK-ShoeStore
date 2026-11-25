@@ -14,6 +14,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductVariantImage> ProductVariantImages => Set<ProductVariantImage>();
     public DbSet<ProductVariantSize> ProductVariantSizes => Set<ProductVariantSize>();
 
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
@@ -37,6 +40,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             table.HasCheckConstraint("CK_Products_Price_Positive", "\"Price\" > 0");
             table.HasCheckConstraint("CK_Products_OldPrice", "\"OldPrice\" IS NULL OR \"OldPrice\" > \"Price\"");
         });
+        b.Entity<Order>().Property(x => x.Total).HasPrecision(10, 2);
+        b.Entity<Order>().Property(x => x.PublicId).HasDefaultValueSql("gen_random_uuid()");
+        b.Entity<Order>().Property(x => x.PaymentMethod).HasDefaultValue("cash");
+        b.Entity<Order>().HasIndex(x => x.PublicId).IsUnique();
+        b.Entity<Order>().HasIndex(x => new { x.UserId, x.CreatedAt });
+        b.Entity<Order>().ToTable(table => table.HasCheckConstraint("CK_Orders_Total", "\"Total\" >= 0"));
+        b.Entity<OrderItem>().Property(x => x.Price).HasPrecision(10, 2);
+        b.Entity<OrderItem>().ToTable(table =>
+        {
+            table.HasCheckConstraint("CK_OrderItems_Quantity", "\"Quantity\" > 0");
+            table.HasCheckConstraint("CK_OrderItems_Price", "\"Price\" > 0");
+            table.HasCheckConstraint("CK_OrderItems_Size", "\"Size\" BETWEEN 30 AND 50");
+        });
+        b.Entity<OrderItem>().HasOne<ProductVariant>().WithMany().HasForeignKey(x => x.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<Order>().HasOne<ApplicationUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<ProductVariant>().Property(x => x.Name).HasColumnType("citext");
         b.Entity<ProductVariant>().Property(x => x.Sku).HasColumnType("citext");
         b.Entity<ProductVariant>().HasIndex(x => x.Sku).IsUnique();

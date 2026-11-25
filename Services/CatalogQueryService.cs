@@ -56,32 +56,67 @@ public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache ca
     public ProductCardViewModel? GetProduct(int id) =>
         cache.Get<ProductCardViewModel>((typeof(ProductCardViewModel), id));
 
-    private async Task<List<ProductCardViewModel>> GetPublishedCardsAsync(CancellationToken cancellationToken) =>
-        (await cache.GetOrCreateAsync((typeof(ProductCardViewModel), "published"), _ =>
-            LoadCardsAsync(db.Products.AsNoTracking()
-                .Where(product => product.Status == ProductStatus.Active)
-                .OrderBy(product => product.Id), cancellationToken)))!;
+    private static readonly object StockUpdateLock = new();
+    private static long stockVersion;
+    private static readonly object PublishedKey = (typeof(ProductCardViewModel), "published");
+
+    internal static void UpdateStock(IMemoryCache cache, Dictionary<(int Product, int Variant, int Size), int> remaining)
+    {
+        lock (StockUpdateLock)
+        {
+            stockVersion++;
+            var updated = new Dictionary<int, ProductCardViewModel>();
+            foreach (var id in remaining.Keys.Select(key => key.Product).Distinct())
+            {
+                var key = (typeof(ProductCardViewModel), id);
+                if (cache.Get<ProductCardViewModel>(key) is not { } card) continue;
+                var sizes = card.Sizes.Select(size => remaining.TryGetValue((id, card.VariantId, size.Size), out var stock)
+                    ? size with { StockQuantity = Math.Min(size.StockQuantity, stock) } : size)
+                    .Where(size => size.StockQuantity > 0).ToArray();
+                updated[id] = cache.Set(key, card with { Sizes = sizes });
+            }
+            if (cache.Get<List<ProductCardViewModel>>(PublishedKey) is { } published)
+                cache.Set(PublishedKey, published.Select(card => updated.GetValueOrDefault(card.Id, card)).ToList());
+        }
+    }
+
+    private Task<List<ProductCardViewModel>> GetPublishedCardsAsync(CancellationToken cancellationToken)
+    {
+        if (cache.Get<List<ProductCardViewModel>>(PublishedKey) is { } cards) return Task.FromResult(cards);
+        return LoadCardsAsync(db.Products.AsNoTracking()
+            .Where(product => product.Status == ProductStatus.Active)
+            .OrderBy(product => product.Id), cancellationToken, publishList: true);
+    }
 
     private async Task<List<ProductCardViewModel>> LoadCardsAsync(
         IQueryable<Product> query,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool publishList = false)
     {
-        var products = await query
-            .Include(product => product.Brand)
-            .Include(product => product.Variants.OrderByDescending(variant => variant.IsDefault)
-                .ThenBy(variant => variant.Id).Take(1))
-            .ThenInclude(variant => variant.GalleryImages)
-            .Include(product => product.Variants.OrderByDescending(variant => variant.IsDefault)
-                .ThenBy(variant => variant.Id).Take(1))
-            .ThenInclude(variant => variant.Sizes)
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
+        while (true)
+        {
+            var version = Volatile.Read(ref stockVersion);
+            var products = await query
+                .Include(product => product.Brand)
+                .Include(product => product.Variants.OrderByDescending(variant => variant.IsDefault)
+                    .ThenBy(variant => variant.Id).Take(1))
+                .ThenInclude(variant => variant.GalleryImages)
+                .Include(product => product.Variants.OrderByDescending(variant => variant.IsDefault)
+                    .ThenBy(variant => variant.Id).Take(1))
+                .ThenInclude(variant => variant.Sizes)
+                .AsSplitQuery()
+                .ToListAsync(cancellationToken);
 
-        var cards = products.Select(ToCard).ToList();
-        foreach (var card in cards)
-            cache.Set((typeof(ProductCardViewModel), card.Id), card);
-
-        return cards;
+            var cards = products.Select(ToCard).ToList();
+            lock (StockUpdateLock)
+            {
+                // Запрос мог прочитать остатки непосредственно перед подтверждением заказа.
+                if (version != stockVersion) continue;
+                foreach (var card in cards) cache.Set((typeof(ProductCardViewModel), card.Id), card);
+                if (publishList) cache.Set(PublishedKey, cards);
+                return cards;
+            }
+        }
     }
 
     private static ProductCardViewModel ToCard(Product product)

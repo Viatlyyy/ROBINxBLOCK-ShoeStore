@@ -10,7 +10,7 @@
 <article class="product" data-product-card>
   <a class="product-card__link" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" aria-label="Открыть @Model.BrandName @Model.Name">
   <div class="image-wrap">
-    <img src="@(hasImage ? image : null)" asp-append-version="true" alt="@Model.BrandName @Model.Name" data-variant-image loading="lazy" decoding="async" hidden="@(!hasImage)" />
+    <img src="@(hasImage ? image : null)" asp-append-version="true" alt="@Model.BrandName @Model.Name" data-variant-image data-product-photo="card" loading="lazy" decoding="async" hidden="@(!hasImage)" />
     <span class="product-image-empty" data-variant-image-empty hidden="@hasImage">Нет фотографии</span>
     @if (ViewData["ShowProductBadges"] is true)
     {

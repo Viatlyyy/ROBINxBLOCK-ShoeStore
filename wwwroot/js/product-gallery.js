@@ -13,6 +13,12 @@
   let activeGroup = groups.find(group => !group.hidden);
   let images = [...(activeGroup?.querySelectorAll('[data-gallery-image]') ?? [])];
   const preloadCache = new Map();
+  const photos = window.productPhotos;
+  const display = (image, source, result) => {
+    if (photos) photos.show(image, source, result);
+    else image.src = result;
+    image.dataset.gallerySource = source;
+  };
   let requestId = 0;
   let animations = [];
 
@@ -47,8 +53,7 @@
   const resetLayers = () => {
     stopAnimations();
     if (buffer.dataset.gallerySource) {
-      main.src = buffer.src;
-      main.dataset.gallerySource = buffer.dataset.gallerySource;
+      display(main, buffer.dataset.gallerySource, buffer.src);
     }
     buffer.removeAttribute('src');
     delete buffer.dataset.gallerySource;
@@ -80,7 +85,7 @@
     resetLayers();
     if (sameSource(main.dataset.gallerySource, source)) return;
     frame.setAttribute('aria-busy', 'true');
-    const loaded = source && await preload(source);
+    const loaded = source && (photos ? await photos.prepare(source, 'detail') : await preload(source) && source);
     if (currentRequest !== requestId) return;
     frame.removeAttribute('aria-busy');
     if (!loaded) {
@@ -92,16 +97,14 @@
       return;
     }
     if (main.hidden || !main.naturalWidth) {
-      main.src = source;
-      main.dataset.gallerySource = source;
+      display(main, source, loaded);
       frame.dataset.currentSource = source;
       main.hidden = false;
       placeholder.hidden = true;
       return;
     }
 
-    buffer.src = source;
-    buffer.dataset.gallerySource = source;
+    display(buffer, source, loaded);
     frame.dataset.currentSource = source;
     frame.setAttribute('aria-busy', 'true');
 
@@ -151,7 +154,7 @@
     show(images[0]);
   });
 
-  main.dataset.gallerySource = main.currentSrc || main.getAttribute('src') || '';
+  main.dataset.gallerySource = main.dataset.photoSource || main.currentSrc || main.getAttribute('src') || '';
   frame.dataset.currentSource = main.dataset.gallerySource;
   gallery.dataset.activeAnimations = '0';
   updateControls(images[0]);

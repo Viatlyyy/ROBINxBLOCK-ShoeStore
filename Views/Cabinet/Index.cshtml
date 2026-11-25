@@ -21,7 +21,7 @@
     {
       <div class="account-latest">
         <partial name="_OrderImage" model="order.ImageUrl" />
-        <div>
+        <div class="account-latest__details">
           <strong>Заказ №@order.Number</strong>
           <time datetime="@order.CreatedAt.ToString("O")">@order.CreatedAt.ToLocalTime().ToString("d MMMM yyyy", culture)</time>
           <span class="account-muted">@order.Status</span>

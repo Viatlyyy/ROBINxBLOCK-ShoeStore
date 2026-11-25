@@ -159,7 +159,9 @@ public class TCustomerAccountIntegration
         Assert.AreEqual(CheckoutPath, signIn.Headers.Location?.OriginalString);
         var checkout = WebUtility.HtmlDecode(await client.GetStringAsync(CheckoutPath));
         StringAssert.Contains(checkout, "Black / Castlerock");
-        StringAssert.Contains(checkout, "Размер: 42");
+        Assert.IsTrue(checkout.Contains("Размер: 42 EU", StringComparison.Ordinal));
+        Assert.IsFalse(checkout.Contains("US 42", StringComparison.Ordinal));
+        Assert.IsTrue(checkout.Contains("data-product-photo=\"compact\"", StringComparison.Ordinal));
         StringAssert.Contains(checkout, "2 ×");
         _ = Confirmation(checkout);
         await AssertNoNewOrdersAsync();
@@ -291,6 +293,7 @@ public class TCustomerAccountIntegration
         var overview = WebUtility.HtmlDecode(await client.GetStringAsync("/Account"));
         StringAssert.Contains(overview, "Последний заказ");
         StringAssert.Contains(overview, "1042");
+        Assert.IsTrue(overview.Contains("data-product-photo=\"compact\"", StringComparison.Ordinal));
         var orders = WebUtility.HtmlDecode(await client.GetStringAsync("/Account/Orders"));
         StringAssert.Contains(orders, "1042");
         Assert.IsFalse(orders.Contains("1018", StringComparison.Ordinal));
@@ -442,6 +445,6 @@ public class TCustomerAccountIntegration
         StringAssert.Contains(orders, $"/Account/Orders/{id}");
         var details = WebUtility.HtmlDecode(await client.GetStringAsync($"/Account/Orders/{id}"));
         StringAssert.Contains(details, "Тестовая модель");
-        StringAssert.Contains(details, "Размер 42");
+        StringAssert.Contains(details, "Размер 42 EU");
     }
 }

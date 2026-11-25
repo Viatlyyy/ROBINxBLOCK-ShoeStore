@@ -50,13 +50,14 @@
   width: 100% !important;
   height: 100% !important;
   margin: 0;
-  padding: 0 !important;
+  padding: 8% !important;
   object-fit: contain !important;
-  background: #fff;
+  background: transparent;
   pointer-events: none;
 }
 
 .product [data-variant-image] {
+  padding: 8%;
   position: relative;
   z-index: 1;
   display: block;

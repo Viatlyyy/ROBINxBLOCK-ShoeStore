@@ -3,6 +3,7 @@
   const easing = 'cubic-bezier(.16, 1, .3, 1)';
   const states = new WeakMap();
   const preloads = new Map();
+  const photos = window.productPhotos;
 
   const preload = source => {
     if (!preloads.has(source)) {
@@ -41,8 +42,8 @@
     reset(image, state);
 
     const url = source ? new URL(source, document.baseURI).href : '';
-    if (url && image.getAttribute('src') && image.src === url) return;
-    const loaded = url && await preload(url);
+    if (url && image.getAttribute('src') && (image.dataset.photoSource || image.src) === url) return;
+    const loaded = url && (photos ? await photos.prepare(url, 'card') : await preload(url) && url);
     if (request !== state.request) return;
     if (!loaded) {
       image.hidden = true;
@@ -51,9 +52,13 @@
       return;
     }
 
+    const display = () => {
+      if (photos) photos.show(image, url, loaded);
+      else image.src = loaded;
+    };
     const cabinetReducedMotion = card.closest('.customer-account') && matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (image.hidden || !image.naturalWidth || cabinetReducedMotion) {
-      image.src = url;
+      display();
       image.hidden = false;
       placeholder.hidden = true;
       return;
@@ -61,13 +66,14 @@
 
     const overlay = image.cloneNode(false);
     overlay.removeAttribute('data-variant-image');
+    overlay.removeAttribute('data-product-photo');
     overlay.removeAttribute('srcset');
     overlay.alt = '';
     overlay.setAttribute('aria-hidden', 'true');
     overlay.className = 'variant-image-previous';
     image.before(overlay);
     state.overlay = overlay;
-    image.src = url;
+    display();
     image.setAttribute('aria-busy', 'true');
     state.animations = [
       overlay.animate(

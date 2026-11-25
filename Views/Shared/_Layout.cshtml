@@ -152,6 +152,7 @@
     <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
   }
+  @if (hasProductCards) { <script src="~/js/product-photos.js" asp-append-version="true"></script> }
   @if (isHome || isCatalog || isCartIndex || isProductDetails || isCabinet)
   {
     <script src="~/js/product-colors.js" asp-append-version="true" defer></script>

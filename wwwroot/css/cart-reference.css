@@ -28,9 +28,9 @@
   display: block;
   height: 152px;
   overflow: hidden;
-  background: #f4f4f3;
+  background: transparent;
 }
-.cart-reference-item__image img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; transition: transform .5s cubic-bezier(.16,1,.3,1); }
+.cart-reference-item__image img { width: 100%; height: 100%; object-fit: contain; padding: 7%; transition: transform .5s cubic-bezier(.16,1,.3,1); }
 .cart-reference-item:hover .cart-reference-item__image img { transform: scale(1.07); }
 .cart-reference-item__details p { margin: 0; color: #777; font-size: 10px; line-height: 1.55; }
 .cart-reference-item__details h2 { margin: 6px 0 15px; font-size: 15px; letter-spacing: -.45px; }

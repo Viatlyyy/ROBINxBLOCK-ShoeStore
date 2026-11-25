@@ -35,14 +35,14 @@
               }
               else
               {
-                <img src="@image" alt="@line.Product.Brand.Name @line.Product.Name" decoding="async" />
+                <img src="@image" alt="@line.Product.Brand.Name @line.Product.Name" data-product-photo="compact" decoding="async" />
               }
             </a>
             <div class="cart-reference-item__details">
               <p class="cart-reference-item__brand">@line.Product.Brand.Name</p>
               <h2>@line.Product.Name</h2>
               <p>Цвет: @line.Variant.Name</p>
-              <p>Размер: @line.Size</p>
+              <p>Размер: @line.Size EU</p>
             </div>
             <form class="cart-reference-item__remove" asp-action="Remove" method="post">
               <input type="hidden" name="variantId" value="@line.Variant.Id" />

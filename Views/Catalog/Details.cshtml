@@ -20,7 +20,7 @@
   <div class="detail-gallery" data-product-gallery>
     <div class="detail-image" role="group" aria-label="Галерея фотографий @Model.BrandName @Model.Name">
       <img src="@(initialImage is null ? null : VersionedImageUrl(initialImage))" alt="@Model.BrandName @Model.Name"
-           data-gallery-main decoding="async" draggable="false" hidden="@(initialImage is null)" />
+           data-gallery-main data-product-photo="detail" decoding="async" draggable="false" hidden="@(initialImage is null)" />
       <span class="product-image-empty" data-gallery-empty hidden="@(initialImage is not null)">Нет фотографии</span>
       <img class="gallery-image-buffer" alt="" data-gallery-buffer aria-hidden="true" draggable="false" />
       <button class="gallery-control gallery-control--previous" type="button" data-gallery-previous aria-label="Предыдущее фото" hidden>←</button>
@@ -41,7 +41,7 @@
             <button class="gallery-thumbnail @(active ? "is-active" : "")" type="button"
                     data-gallery-image data-gallery-source="@VersionedImageUrl(photo.ImageUrl)"
                     aria-label="@imageLabel" aria-pressed="@(active ? "true" : "false")">
-              <img src="@photo.ThumbnailUrl" asp-append-version="true" alt="" width="65" height="65"
+              <img src="@photo.ThumbnailUrl" asp-append-version="true" alt="" width="65" height="65" data-product-photo="thumbnail"
                    loading="lazy" decoding="async" fetchpriority="low" />
             </button>
           }
@@ -79,7 +79,7 @@
     <p class="description">@Model.Description</p>
     <form asp-controller="Cart" asp-action="Add" method="post" class="product-options" data-add-to-cart-form data-product-options data-quantity-limit="10" role="group" aria-label="Параметры товара">
       <input type="hidden" name="variantId" value="@selected.Id" data-variant-input />
-      <span>Размер</span>
+      <span>Размер (EU)</span>
       @foreach (var variant in variants)
       {
         var active = variant.Id == selected.Id;

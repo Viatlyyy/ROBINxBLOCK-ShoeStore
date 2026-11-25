@@ -54,8 +54,8 @@
         @foreach (var line in Model.Lines)
         {
           <article class="checkout-summary__item">
-            <img src="@(string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl)" alt="@line.Product.Brand.Name @line.Product.Name" loading="lazy" decoding="async" />
-            <div><b>@line.Product.Brand.Name</b><strong>@line.Product.Name</strong><span>Цвет: @line.Variant.Name</span><span>Размер: @line.Size / US @line.Size</span></div>
+            <img src="@(string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl)" alt="@line.Product.Brand.Name @line.Product.Name" data-product-photo="compact" loading="lazy" decoding="async" />
+            <div><b>@line.Product.Brand.Name</b><strong>@line.Product.Name</strong><span>Цвет: @line.Variant.Name</span><span>Размер: @line.Size EU</span></div>
             <em>@line.Quantity × @line.Product.Price.ToString("N0") ₽</em><i>@line.Total.ToString("N0") ₽</i>
           </article>
         }

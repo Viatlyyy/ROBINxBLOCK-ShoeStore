@@ -90,7 +90,8 @@ public sealed class CartService(ApplicationDbContext db, IHttpContextAccessor ht
             .Select(line =>
             {
                 var stock = line.Variant.Sizes.First(size => size.Size == line.Size).StockQuantity;
-                line.Quantity = Math.Min(line.Quantity, Math.Min(stock, MaxQuantity));
+                line.MaximumQuantity = Math.Min(stock, MaxQuantity);
+                line.Quantity = Math.Min(line.Quantity, line.MaximumQuantity);
                 return line;
             })
             .ToList();

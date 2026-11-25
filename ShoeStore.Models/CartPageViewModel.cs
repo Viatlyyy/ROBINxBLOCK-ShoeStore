@@ -3,7 +3,6 @@ namespace ShoeStore.Models;
 public sealed class CartPageViewModel
 {
     public required List<CartLine> Lines { get; init; }
-    public required List<ProductCardViewModel> Recommendations { get; init; }
 
     public static string ItemsLabel(int count)
     {

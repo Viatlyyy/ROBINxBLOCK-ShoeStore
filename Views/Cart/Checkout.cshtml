@@ -1,82 +1,135 @@
-@model ShoeStore.Models.CheckoutViewModel
-@{ ViewData["Title"] = "Оформление заказа"; }
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Оформление заказа";
+}
 
-<section class="checkout-page">
-  <p class="checkout-breadcrumb"><a asp-action="Index">Корзина</a><span>/</span> Оформление заказа</p>
-  <h1>Оформление заказа</h1>
+<section id="purchase-content" class="purchase-flow checkout-page" data-purchase-flow aria-labelledby="checkout-title">
+  <nav class="purchase-breadcrumb" aria-label="Хлебные крошки">
+    <a asp-controller="Home" asp-action="Index">Главная</a><span aria-hidden="true">/</span>
+    <a asp-action="Index">Корзина</a><span aria-hidden="true">/</span>
+    <span aria-current="page">Оформление заказа</span>
+  </nav>
+  <header class="purchase-heading"><h1 id="checkout-title">Оформление заказа</h1></header>
 
-  <form asp-action="Checkout" method="post" class="checkout-reference" data-checkout-form>
+  <form asp-action="Checkout" method="post" class="purchase-columns checkout-reference" data-checkout-form>
     <input type="hidden" name="confirmation" value="@ViewData["Confirmation"]" />
     <div class="checkout-reference__forms">
-      <section class="checkout-panel" data-checkout-panel>
-        <h2>Контактные данные</h2>
-        <div asp-validation-summary="ModelOnly" role="alert"></div>
+      <div asp-validation-summary="ModelOnly" class="checkout-errors" role="alert" tabindex="-1" data-checkout-errors></div>
+      <section class="checkout-panel" aria-labelledby="checkout-contact">
+        <h2 id="checkout-contact">Контактные данные</h2>
         <div class="checkout-grid checkout-grid--contact">
-          <label>Имя<input asp-for="CustomerName" placeholder="Введите имя" autocomplete="given-name" /><span asp-validation-for="CustomerName"></span></label>
-          <label>Фамилия<input asp-for="LastName" placeholder="Введите фамилию" autocomplete="family-name" /><span asp-validation-for="LastName"></span></label>
-          <label>E-mail<input asp-for="Email" type="email" placeholder="example@email.com" autocomplete="email" /><span asp-validation-for="Email"></span></label>
-          <label>Телефон<input asp-for="Phone" placeholder="+7 (___) ___-__-__" autocomplete="tel" /><span asp-validation-for="Phone"></span></label>
+          <label>Имя <span aria-hidden="true">*</span>
+            <input asp-for="CustomerName" autocomplete="given-name" maxlength="80" required aria-describedby="checkout-name-error" />
+            <span asp-validation-for="CustomerName" id="checkout-name-error"></span>
+          </label>
+          <label>Фамилия
+            <input asp-for="LastName" autocomplete="family-name" maxlength="80" aria-describedby="checkout-last-name-error" />
+            <span asp-validation-for="LastName" id="checkout-last-name-error"></span>
+          </label>
+          <label>E-mail
+            <input asp-for="Email" type="email" autocomplete="email" maxlength="254" aria-describedby="checkout-email-error" />
+            <span asp-validation-for="Email" id="checkout-email-error"></span>
+          </label>
+          <label>Телефон <span aria-hidden="true">*</span>
+            <input asp-for="Phone" type="tel" placeholder="+7 (___) ___-__-__" autocomplete="tel" maxlength="32" required aria-describedby="checkout-phone-error" />
+            <span asp-validation-for="Phone" id="checkout-phone-error"></span>
+          </label>
         </div>
       </section>
 
-      <section class="checkout-panel" data-checkout-panel>
-        <h2>Доставка</h2>
-        <div class="delivery-options" role="radiogroup" aria-label="Способ доставки">
-          <label class="delivery-option"><input asp-for="DeliveryMethod" type="radio" id="DeliveryMethod-courier" value="Курьер" /><span><i>●</i>Курьер</span></label>
-          <label class="delivery-option"><input asp-for="DeliveryMethod" type="radio" id="DeliveryMethod-pickup" value="Самовывоз" /><span><i>○</i>Самовывоз</span></label>
-          <label class="delivery-option"><input asp-for="DeliveryMethod" type="radio" id="DeliveryMethod-collection" value="Пункт выдачи" /><span><i>○</i>Пункт выдачи</span></label>
+      <fieldset class="checkout-panel checkout-delivery">
+        <legend>Доставка</legend>
+        <div class="delivery-options">
+          @foreach (var (id, label) in new[] { ("courier", "Курьер"), ("pickup", "Самовывоз"), ("collection", "Пункт выдачи") })
+          {
+            <label class="delivery-option">
+              <input asp-for="DeliveryMethod" type="radio" id="DeliveryMethod-@id" value="@label" data-delivery-option="@id" aria-describedby="checkout-delivery-error" />
+              <span>@label</span>
+            </label>
+          }
         </div>
-        <div class="checkout-grid checkout-grid--address">
-          <label>Город<select asp-for="City"><option value="">Выберите город</option><option>Москва</option><option>Санкт-Петербург</option><option>Казань</option></select><span asp-validation-for="City"></span></label>
-          <label class="checkout-grid__wide">Улица<input asp-for="Street" placeholder="Введите улицу" autocomplete="street-address" /><span asp-validation-for="Street"></span></label>
-          <label>Дом<input asp-for="House" placeholder="Введите дом" /><span asp-validation-for="House"></span></label>
-          <label>Квартира<input asp-for="Apartment" placeholder="Введите квартиру" /><span asp-validation-for="Apartment"></span></label>
-          <label>Индекс<input asp-for="Postcode" placeholder="Введите индекс" autocomplete="postal-code" /><span asp-validation-for="Postcode"></span></label>
+        <span asp-validation-for="DeliveryMethod" id="checkout-delivery-error"></span>
+        <div class="checkout-address" data-delivery-fields>
+          <div class="checkout-grid checkout-grid--city" data-delivery-city>
+            <label>Город <span aria-hidden="true">*</span>
+              <select asp-for="City" autocomplete="address-level2" aria-describedby="checkout-city-error">
+                <option value="">Выберите город</option><option>Москва</option><option>Санкт-Петербург</option><option>Казань</option>
+              </select>
+              <span asp-validation-for="City" id="checkout-city-error"></span>
+            </label>
+          </div>
+          <div class="checkout-grid checkout-grid--courier" data-delivery-address>
+            <label class="checkout-grid__street">Улица <span aria-hidden="true">*</span>
+              <input asp-for="Street" autocomplete="address-line1" maxlength="120" aria-describedby="checkout-street-error" />
+              <span asp-validation-for="Street" id="checkout-street-error"></span>
+            </label>
+            <label>Дом <span aria-hidden="true">*</span>
+              <input asp-for="House" maxlength="20" aria-describedby="checkout-house-error" />
+              <span asp-validation-for="House" id="checkout-house-error"></span>
+            </label>
+            <label>Квартира
+              <input asp-for="Apartment" autocomplete="address-line2" maxlength="20" aria-describedby="checkout-apartment-error" />
+              <span asp-validation-for="Apartment" id="checkout-apartment-error"></span>
+            </label>
+            <label>Индекс
+              <input asp-for="Postcode" autocomplete="postal-code" inputmode="numeric" maxlength="12" aria-describedby="checkout-postcode-error" />
+              <span asp-validation-for="Postcode" id="checkout-postcode-error"></span>
+            </label>
+          </div>
         </div>
-        <p class="checkout-delivery-note">⌁ Стандартная доставка 1–3 дня</p>
+      </fieldset>
+
+      <section class="checkout-panel" aria-labelledby="checkout-payment">
+        <h2 id="checkout-payment">Способ оплаты</h2>
+        <input type="hidden" name="PaymentMethod" value="cash" />
+        <div class="checkout-payment"><span aria-hidden="true"></span>Оплата при получении</div>
+        <span asp-validation-for="PaymentMethod"></span>
       </section>
 
-      <section class="checkout-panel" data-checkout-panel>
-        <h2>Способ оплаты</h2>
-        <div class="payment-options">
-          <label class="payment-option"><input asp-for="PaymentMethod" type="radio" id="PaymentMethod-cash" value="cash" checked /><span><i>●</i>Оплата при получении</span></label>
-        </div>
-      </section>
-
-      <section class="checkout-panel checkout-panel--comment" data-checkout-panel>
-        <label>Комментарий к заказу <small>(необязательно)</small><textarea asp-for="Comment" placeholder="Ваш комментарий к заказу"></textarea><span asp-validation-for="Comment"></span></label>
+      <section class="checkout-panel">
+        <label class="checkout-comment" for="Comment">Комментарий к заказу <small>необязательно</small></label>
+        <textarea asp-for="Comment" placeholder="Например, удобное время доставки" maxlength="500" aria-describedby="checkout-comment-error"></textarea>
+        <span asp-validation-for="Comment" id="checkout-comment-error"></span>
       </section>
     </div>
 
-    <aside class="checkout-summary" data-checkout-summary>
-      <h2>Ваш заказ</h2>
-      <div class="checkout-summary__items">
+    <aside class="purchase-summary checkout-summary" aria-labelledby="checkout-summary-title">
+      <h2 id="checkout-summary-title">Ваш заказ</h2>
+      <ul class="checkout-summary__items">
         @foreach (var line in Model.Lines)
         {
-          <article class="checkout-summary__item">
-            <img src="@(string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl)" alt="@line.Product.Brand.Name @line.Product.Name" data-product-photo="compact" loading="lazy" decoding="async" />
-            <div><b>@line.Product.Brand.Name</b><strong>@line.Product.Name</strong><span>Цвет: @line.Variant.Name</span><span>Размер: @line.Size EU</span></div>
-            <em>@line.Quantity × @line.Product.Price.ToString("N0") ₽</em><i>@line.Total.ToString("N0") ₽</i>
-          </article>
+          var image = string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl;
+          <li class="checkout-summary__item">
+            <div class="purchase-photo checkout-summary__photo">
+              <span class="purchase-photo__fallback" aria-hidden="true">Нет фото</span>
+              @if (!string.IsNullOrWhiteSpace(image))
+              {
+                <img src="@image" alt="" data-product-photo="compact" data-purchase-photo decoding="async" />
+              }
+            </div>
+            <div class="checkout-summary__item-info">
+              <strong>@line.Product.Brand.Name @line.Product.Name</strong>
+              <span>Цвет: @line.Variant.Name</span>
+              <span>Размер: @line.Size EU</span>
+            </div>
+            <span class="checkout-summary__quantity">@line.Quantity × @line.Product.Price.ToString("N0") ₽</span>
+          </li>
         }
-      </div>
-      <dl>
-        <div><dt>Подытог</dt><dd>@Model.Total.ToString("N0") ₽</dd></div>
-        <div><dt>Доставка</dt><dd>Бесплатно</dd></div>
-        <div><dt>Скидка</dt><dd>0 ₽</dd></div>
-        <div class="checkout-summary__total"><dt>Итого</dt><dd>@Model.Total.ToString("N0") ₽</dd></div>
+      </ul>
+      <dl class="purchase-totals">
+        <div><dt>Товары</dt><dd>@Model.Total.ToString("N0") ₽</dd></div>
+        <div><dt>Доставка</dt><dd>Стоимость не рассчитана</dd></div>
+        <div class="purchase-totals__total"><dt>Итого за товары</dt><dd>@Model.Total.ToString("N0") ₽</dd></div>
       </dl>
-      <label class="checkout-promo"><input placeholder="Введите промокод" /><button type="button" aria-label="Применить промокод">→</button></label>
-      <button class="button checkout-submit" type="submit">Подтвердить заказ</button>
-      <a class="checkout-back" asp-action="Index">Вернуться в корзину</a>
-      <p class="checkout-security">♧&nbsp;&nbsp; Безопасная оплата и защита данных</p>
+      <button class="button purchase-button checkout-submit" type="submit" disabled="@(Model.Lines.Count == 0)">
+        <span data-checkout-submit-label>Подтвердить заказ</span>
+        <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
+        <span class="checkout-spinner" aria-hidden="true" hidden></span>
+      </button>
+      <a class="purchase-back checkout-back" asp-action="Index">
+        <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"back"' /> Вернуться в корзину
+      </a>
+      <p class="sr-only" role="status" data-checkout-progress></p>
     </aside>
   </form>
-</section>
-
-<section class="checkout-benefits" aria-label="Преимущества RONINxBLOCK">
-  <div><span>▱</span><p><b>Бесплатная доставка</b><small>По всей России</small></p></div>
-  <div><span>▣</span><p><b>Безопасная оплата</b><small>Мы защищаем ваши данные</small></p></div>
-  <div><span>◇</span><p><b>Лёгкий возврат</b><small>14 дней на возврат</small></p></div>
-  <div><span>☆</span><p><b>Поддержка 24/7</b><small>Мы всегда на связи</small></p></div>
 </section>

@@ -46,6 +46,9 @@ public class TSortingDatabase
                 "Id" integer PRIMARY KEY, "ProductId" integer, "Name" text,
                 "Sku" text, "Swatch" text, "ImageUrl" text, "ThumbnailUrl" text,
                 "IsDefault" boolean);
+            CREATE TEMP TABLE "ProductVariantSizes" (
+                "Id" integer PRIMARY KEY, "ProductVariantId" integer,
+                "Size" integer, "StockQuantity" integer);
             CREATE TEMP TABLE "ProductVariantImages" (
                 "Id" integer PRIMARY KEY, "ProductVariantId" integer,
                 "ImageUrl" text, "ThumbnailUrl" text, "SortOrder" integer);

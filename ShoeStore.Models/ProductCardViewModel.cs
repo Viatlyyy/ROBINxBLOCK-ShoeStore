@@ -4,6 +4,8 @@ public sealed class ProductCardViewModel
 {
     public int Id { get; init; }
     public int BrandId { get; init; }
+    public int VariantId { get; init; }
+    public IReadOnlyList<ProductSizeViewModel> Sizes { get; init; } = [];
     public string Name { get; init; } = "";
     public string BrandName { get; init; } = "";
     public string Description { get; init; } = "";

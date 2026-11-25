@@ -4,7 +4,12 @@
 .details h2 { font-size: 24px; }
 .details .description { line-height: 1.7; color: #555; margin: 24px 0; }
 .details .sizes { display: flex; gap: 7px; flex-wrap: wrap; margin: 11px 0 20px; }
-.details .size-placeholder { border: 1px solid #ddd; padding: 11px 14px; background: #fff; color: #555; font: inherit; }
+.details .sizes label { position: relative; cursor: pointer; }
+.details .sizes input { position: absolute; opacity: 0; }
+.details .sizes span { display: block; border: 1px solid #ddd; padding: 11px 14px; }
+.details .sizes input:checked + span { background: #111; color: #fff; }
+.details .sizes input:focus-visible + span { outline: 2px solid #111; outline-offset: 3px; }
+.details .sizes-empty { margin: 0; color: #555; }
 .details button:disabled { cursor: default; }
 .details .product-reviews { grid-column: 1 / -1; border-top: 1px solid #ddd; padding-top: 24px; }
 .details .product-reviews p { color: #555; }

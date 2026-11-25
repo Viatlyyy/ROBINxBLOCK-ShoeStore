@@ -109,9 +109,7 @@ public sealed class CartService(ApplicationDbContext db, IHttpContextAccessor ht
         var stock = await db.ProductVariantSizes.AsNoTracking()
             .Where(item => item.ProductVariantId == variantId
                 && item.Size == size
-                && item.ProductVariant.Product.Status == ProductStatus.Active
-                && item.ProductVariant.Product.Variants.OrderByDescending(variant => variant.IsDefault)
-                    .ThenBy(variant => variant.Id).Select(variant => variant.Id).First() == variantId)
+                && item.ProductVariant.Product.Status == ProductStatus.Active)
             .Select(item => item.StockQuantity)
             .FirstOrDefaultAsync(cancellationToken);
         if (stock <= 0) return CartMutationResult.Failed("Выбранный размер больше недоступен.");

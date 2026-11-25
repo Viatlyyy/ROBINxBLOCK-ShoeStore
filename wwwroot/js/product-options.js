@@ -6,6 +6,12 @@
   const input = picker.querySelector('[data-quantity-input]');
   const decrease = picker.querySelector('[data-quantity-decrease]');
   const increase = picker.querySelector('[data-quantity-increase]');
+  const submit = form.querySelector('button[type="submit"]');
+  form.closest('.details').addEventListener('productvariantchange', () => {
+    submit.disabled = !form.querySelector('input[name="size"]:enabled');
+    form.querySelector('[data-cart-error]').hidden = true;
+    update(1, false);
+  });
   let pulseTimer;
 
   function update(value, animate) {
@@ -30,8 +36,7 @@
   decrease.addEventListener('click', () => update(Number(input.value) - 1, true));
   increase.addEventListener('click', () => update(Number(input.value) + 1, true));
   window.addEventListener('pageshow', event => {
-    if (event.persisted) form.reset();
-    update(1, false);
+    if (event.persisted) update(Number(input.value) || 1, false);
   });
   update(1, false);
 })();

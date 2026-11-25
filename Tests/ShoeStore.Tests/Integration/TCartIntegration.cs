@@ -57,6 +57,10 @@ public class TCartIntegration
             INSERT INTO "Brands" VALUES (1, 'Бренд', '');
             INSERT INTO "Products" VALUES (1, 1, 1, 'Модель', '', 2000, NULL, '', 'Active', true, false, now(), now());
             INSERT INTO "ProductVariants" VALUES (7, 1, 'Основной', 'A', '', '', NULL, true);
+            INSERT INTO "ProductVariants" VALUES
+                (8, 1, 'Мятный', 'B', '#39a788', '/images/products/530.jpg', NULL, false);
+            INSERT INTO "ProductVariantSizes" VALUES (100, 8, 37, 1), (101, 8, 50, 2);
+            INSERT INTO "ProductVariantImages" VALUES (200, 8, '/images/products/9060.jpg', NULL, 1);
             INSERT INTO "ProductVariantSizes" SELECT s, 7, s, CASE s WHEN 36 THEN 0 WHEN 37 THEN 3 ELSE 20 END
                 FROM generate_series(36, 49) s;
             """, connection);
@@ -93,10 +97,10 @@ public class TCartIntegration
         if (connection is not null) await connection.DisposeAsync();
     }
 
-    private Task<HttpResponseMessage> Post(string action, int size, int quantity = 1, int change = 1) =>
+    private Task<HttpResponseMessage> Post(string action, int size, int quantity = 1, int change = 1, int variantId = 7) =>
         client.PostAsync("/Cart/" + action, new FormUrlEncodedContent(new Dictionary<string, string>
         {
-            ["__RequestVerificationToken"] = token, ["variantId"] = "7", ["size"] = size.ToString(),
+            ["__RequestVerificationToken"] = token, ["variantId"] = variantId.ToString(), ["size"] = size.ToString(),
             ["quantity"] = quantity.ToString(), ["change"] = change.ToString()
         }));
 
@@ -170,12 +174,15 @@ public class TCartIntegration
         StringAssert.Contains(receipt, "Заказ №1 создан");
         Assert.IsFalse(receipt.Contains(fields["Phone"]));
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/Cart/Success/{Guid.NewGuid()}")).StatusCode);
-        Assert.IsFalse((await client.GetStringAsync("/Catalog/Details/1")).Contains("value=\"37\" data-stock"));
+        var details = await client.GetStringAsync("/Catalog/Details/1");
+        var defaultSizes = Regex.Match(details, """data-size-options="7"[^>]*>(.*?)</div>""", RegexOptions.Singleline);
+        Assert.IsTrue(defaultSizes.Success);
+        Assert.IsFalse(defaultSizes.Value.Contains("value=\"37\" data-stock", StringComparison.Ordinal));
         StringAssert.Contains(WebUtility.HtmlDecode(await client.GetStringAsync("/Cart")), "Корзина пока пуста");
         await using var check = new NpgsqlCommand("""
             SELECT count(*) = 1 AND min(o."Total") = 6000 AND min(i."Price") = 2000 AND min(i."Quantity") = 3
                 AND min(i."Size") = 37 AND min(o."Status") = 'Новый' AND min(o."Street") = 'Тестовая'
-                AND (SELECT "StockQuantity" FROM "ProductVariantSizes" WHERE "Size" = 37) = 0
+                AND (SELECT "StockQuantity" FROM "ProductVariantSizes" WHERE "ProductVariantId" = 7 AND "Size" = 37) = 0
             FROM "Orders" o JOIN "OrderItems" i ON i."OrderId" = o."Id"
             """, connection);
         Assert.AreEqual(true, await check.ExecuteScalarAsync());
@@ -186,15 +193,87 @@ public class TCartIntegration
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product).ThenInclude(p => p.Brand).SingleAsync();
+        var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product).ThenInclude(p => p.Brand).SingleAsync(v => v.Id == 7);
         var service = scope.ServiceProvider.GetRequiredService<CheckoutService>();
         var result = await service.PlaceOrderAsync(new CheckoutViewModel(), [
             new CartLine { Variant = variant, Size = 37, Quantity = 1 },
             new CartLine { Variant = variant, Size = 50, Quantity = 1 }
         ], null, Guid.NewGuid(), CancellationToken.None);
         Assert.IsFalse(result.Success);
-        Assert.AreEqual(3, await db.ProductVariantSizes.Where(s => s.Size == 37).Select(s => s.StockQuantity).SingleAsync());
+        Assert.AreEqual(3, await db.ProductVariantSizes.Where(s => s.ProductVariantId == 7 && s.Size == 37).Select(s => s.StockQuantity).SingleAsync());
         Assert.AreEqual(0, await db.Orders.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task ProductColors_RenderSwatchesAndOpenSelectedVariant()
+    {
+        foreach (var page in new[] { "/", "/Catalog", "/Catalog/SearchResults?search=Модель" })
+        {
+            var html = WebUtility.HtmlDecode(await client.GetStringAsync(page));
+            StringAssert.Contains(html, "data-variant-id=\"8\"");
+            StringAssert.Contains(html, "Мятный");
+        }
+
+        var selected = WebUtility.HtmlDecode(await client.GetStringAsync("/Catalog/Details/1?variantId=8"));
+        StringAssert.Contains(selected, "name=\"variantId\" value=\"8\"");
+        StringAssert.Contains(selected, "data-gallery-images=\"8\"");
+        StringAssert.Contains(selected, "value=\"50\" data-stock=\"2\"");
+
+        var fallback = await client.GetStringAsync("/Catalog/Details/1?variantId=12345");
+        StringAssert.Contains(fallback, "name=\"variantId\" value=\"7\"");
+    }
+
+    [TestMethod]
+    public async Task ProductColors_DetailsLoadsProductAbsentFromCatalogCache()
+    {
+        await using var newProduct = new NpgsqlCommand("""
+            INSERT INTO "Products" VALUES (2, 1, 1, 'Прямая ссылка', '', 2000, NULL, '', 'Active', false, false, now(), now());
+            INSERT INTO "ProductVariants" VALUES (9, 2, 'Синий', 'C', '#0033aa', '/images/products/530.jpg', NULL, true);
+            INSERT INTO "ProductVariantSizes" VALUES (102, 9, 37, 2);
+            """, connection);
+        await newProduct.ExecuteNonQueryAsync();
+
+        var page = WebUtility.HtmlDecode(await client.GetStringAsync("/Catalog/Details/2?variantId=9"));
+        StringAssert.Contains(page, "Прямая ссылка");
+        StringAssert.Contains(page, "name=\"variantId\" value=\"9\"");
+    }
+
+    [TestMethod]
+    public async Task ProductColors_CheckoutKeepsVariantsSeparateAndRefreshesSelectedStock()
+    {
+        (await Post("Add", 37)).EnsureSuccessStatusCode();
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await Post("Add", 38, variantId: 8)).StatusCode);
+        (await Post("Add", 37, variantId: 8)).EnsureSuccessStatusCode();
+
+        var cart = WebUtility.HtmlDecode(await client.GetStringAsync("/Cart"));
+        Assert.AreEqual(2, Regex.Matches(cart, "data-cart-line>").Count);
+        StringAssert.Contains(cart, "Цвет: Основной");
+        StringAssert.Contains(cart, "Цвет: Мятный");
+        StringAssert.Contains(cart, "/Catalog/Details/1?variantId=8");
+
+        var checkout = await client.GetStringAsync("/Cart/Checkout");
+        var confirmation = Regex.Match(checkout, "name=\"confirmation\" value=\"([^\"]+)\"").Groups[1].Value;
+        using var data = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token, ["confirmation"] = confirmation,
+            ["CustomerName"] = "Покупатель", ["Phone"] = "+79000000000",
+            ["DeliveryMethod"] = "Самовывоз", ["PaymentMethod"] = "cash"
+        });
+        var response = await client.PostAsync("/Cart/Checkout", data);
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        StringAssert.Contains(response.Headers.Location?.OriginalString, "/Success/");
+
+        var details = await client.GetStringAsync("/Catalog/Details/1?variantId=8");
+        StringAssert.Contains(details, "name=\"variantId\" value=\"8\"");
+        StringAssert.Contains(details, "value=\"37\" data-stock=\"2\"");
+        Assert.IsFalse(details.Contains("value=\"37\" data-stock=\"1\"", StringComparison.Ordinal));
+
+        await using var check = new NpgsqlCommand("""
+            SELECT count(*) = 2 AND bool_or("ProductVariantId" = 7 AND "Size" = 37)
+                AND bool_or("ProductVariantId" = 8 AND "Size" = 37 AND "VariantName" = 'Мятный')
+            FROM "OrderItems"
+            """, connection);
+        Assert.AreEqual(true, await check.ExecuteScalarAsync());
     }
 
     [TestMethod]

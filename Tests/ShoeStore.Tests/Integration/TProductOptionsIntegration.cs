@@ -51,7 +51,7 @@ public class TProductOptionsIntegration
         ];
         catalog = new Mock<ICatalogQueryService>(MockBehavior.Strict);
         foreach (var product in products)
-            catalog.Setup(service => service.GetProduct(product.Id)).Returns(product);
+            catalog.Setup(service => service.GetProductAsync(product.Id, It.IsAny<CancellationToken>())).ReturnsAsync(product);
 
         application = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -123,7 +123,7 @@ public class TProductOptionsIntegration
     [TestMethod]
     public async Task Details_DisablesSelectionWhenNoSizesAreAvailable()
     {
-        catalog.Setup(service => service.GetProduct(101)).Returns(new ProductCardViewModel
+        catalog.Setup(service => service.GetProductAsync(101, It.IsAny<CancellationToken>())).ReturnsAsync(new ProductCardViewModel
         {
             Id = 101, Name = "Товар без доступных размеров", BrandName = "Первый бренд", Price = 12000m
         });

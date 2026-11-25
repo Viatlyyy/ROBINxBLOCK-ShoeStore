@@ -44,7 +44,7 @@ public class TProductDetailsIntegration
         catalog.Setup(service => service.GetHomeAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new HomePageViewModel { Products = products.ToList() });
         foreach (var product in products)
-            catalog.Setup(service => service.GetProduct(product.Id)).Returns(product);
+            catalog.Setup(service => service.GetProductAsync(product.Id, It.IsAny<CancellationToken>())).ReturnsAsync(product);
 
         application = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {

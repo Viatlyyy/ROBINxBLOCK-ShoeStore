@@ -2,7 +2,7 @@
   const form = document.querySelector('[data-add-to-cart-form]');
   const cart = document.querySelector('.header-icon-button[href*="/Cart"]');
   const count = document.querySelector('[data-cart-count]');
-  const productImage = document.querySelector('.detail-image img');
+  const gallery = document.querySelector('.detail-image');
   if (!form || !cart || !window.fetch) return;
   const error = form.querySelector('[data-cart-error]');
 
@@ -16,12 +16,16 @@
     submit?.classList.add('is-adding');
     let flying;
     let animation;
-    if (productImage && productImage.animate) {
+    const incoming = gallery?.querySelector('[data-gallery-buffer][src]');
+    const productImage = incoming?.naturalWidth ? incoming
+      : gallery?.querySelector('[data-gallery-main]:not([hidden])');
+    if (productImage?.naturalWidth && (incoming === productImage || !gallery.hasAttribute('aria-busy'))) {
       const start = productImage.getBoundingClientRect();
       const finish = cart.getBoundingClientRect();
       flying = productImage.cloneNode(false);
       flying.className = 'cart-flying-product';
-      flying.removeAttribute('data-variant-image');
+      flying.removeAttribute('data-gallery-main');
+      flying.removeAttribute('data-gallery-buffer');
       flying.setAttribute('alt', '');
       flying.setAttribute('aria-hidden', 'true');
       flying.style.left = `${start.left + start.width / 2 - 90}px`;

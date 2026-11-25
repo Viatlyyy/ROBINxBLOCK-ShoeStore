@@ -59,6 +59,10 @@
     <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" />
   }
+  @if (isHome || isCatalog || isCartIndex || isProductDetails)
+  {
+    <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" />
+  }
   @if (isOrderPage) { <link rel="stylesheet" href="~/css/checkout-reference.css" asp-append-version="true" /> }
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
@@ -129,6 +133,10 @@
     <script src="~/js/hero-carousel.js" asp-append-version="true"></script>
     <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
+  }
+  @if (isHome || isCatalog || isCartIndex || isProductDetails)
+  {
+    <script src="~/js/product-colors.js" asp-append-version="true" defer></script>
   }
   @if (isProductDetails)
   {

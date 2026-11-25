@@ -11,24 +11,22 @@ namespace ShoeStore.Tests.Unit;
 public class TCatalogController
 {
     [TestMethod]
-    public void Details_ReturnsNotFound_WhenProductIsMissing()
+    public async Task Details_ReturnsNotFound_WhenProductIsMissing()
     {
         const int productId = 999;
         var catalog = new Mock<ICatalogQueryService>(MockBehavior.Strict);
-        catalog.Setup(service => service.GetProduct(productId)).Returns((ProductCardViewModel?)null);
+        catalog.Setup(service => service.GetProductAsync(productId, It.IsAny<CancellationToken>())).ReturnsAsync((ProductCardViewModel?)null);
         var controller = new CatalogController(catalog.Object);
 
-        var result = controller.Details(productId);
+        var result = await controller.Details(productId);
 
         Assert.IsInstanceOfType<NotFoundResult>(result);
-        catalog.Verify(service => service.GetProduct(productId), Times.Once);
+        catalog.Verify(service => service.GetProductAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
-    public void Details_ReturnsSelectedProductModel()
+    public async Task Details_ReturnsSelectedProductModel()
     {
-        Assert.AreEqual(typeof(IActionResult), typeof(CatalogController).GetMethod("Details")?.ReturnType);
-
         var products = new[]
         {
             new ProductCardViewModel
@@ -46,12 +44,12 @@ public class TCatalogController
         };
         var catalog = new Mock<ICatalogQueryService>(MockBehavior.Strict);
         foreach (var product in products)
-            catalog.Setup(service => service.GetProduct(product.Id)).Returns(product);
+            catalog.Setup(service => service.GetProductAsync(product.Id, It.IsAny<CancellationToken>())).ReturnsAsync(product);
         var controller = new CatalogController(catalog.Object);
 
         foreach (var product in products)
         {
-            var result = controller.Details(product.Id) as ViewResult;
+            var result = await controller.Details(product.Id) as ViewResult;
             Assert.IsNotNull(result);
             Assert.AreSame(product, result.Model);
         }

@@ -8,8 +8,11 @@
   const previous = gallery.querySelector('[data-gallery-previous]');
   const next = gallery.querySelector('[data-gallery-next]');
   const counter = gallery.querySelector('[data-gallery-counter]');
+  const placeholder = gallery.querySelector('[data-gallery-empty]');
+  const groups = [...gallery.querySelectorAll('[data-gallery-images]')];
+  let activeGroup = groups.find(group => !group.hidden);
+  let images = [...(activeGroup?.querySelectorAll('[data-gallery-image]') ?? [])];
   const preloadCache = new Map();
-  const images = [...gallery.querySelectorAll('[data-gallery-image]')];
   let requestId = 0;
   let animations = [];
 
@@ -25,7 +28,10 @@
         try { await loader.decode?.(); } catch {  }
         resolve(true);
       };
-      loader.onerror = () => resolve(false);
+      loader.onerror = () => {
+        preloadCache.delete(url);
+        resolve(false);
+      };
       loader.src = source;
     });
     preloadCache.set(url, task);
@@ -61,18 +67,38 @@
       button.setAttribute('aria-pressed', String(active));
     });
     const index = Math.max(0, images.indexOf(selected));
-    if (counter) counter.textContent = `${index + 1} / ${Math.max(1, images.length)}`;
+    if (counter) {
+      counter.hidden = images.length === 0;
+      counter.textContent = (index + 1) + ' / ' + images.length;
+    }
     if (previous) previous.hidden = images.length < 2;
     if (next) next.hidden = images.length < 2;
   };
 
   const changeImage = async source => {
-    if (!source) return;
     const currentRequest = ++requestId;
-    if (!await preload(source) || currentRequest !== requestId) return;
-
     resetLayers();
-    if (sameSource(main.dataset.gallerySource || main.currentSrc || main.src, source)) return;
+    if (sameSource(main.dataset.gallerySource, source)) return;
+    frame.setAttribute('aria-busy', 'true');
+    const loaded = source && await preload(source);
+    if (currentRequest !== requestId) return;
+    frame.removeAttribute('aria-busy');
+    if (!loaded) {
+      main.hidden = true;
+      main.removeAttribute('src');
+      delete main.dataset.gallerySource;
+      delete frame.dataset.currentSource;
+      placeholder.hidden = false;
+      return;
+    }
+    if (main.hidden || !main.naturalWidth) {
+      main.src = source;
+      main.dataset.gallerySource = source;
+      frame.dataset.currentSource = source;
+      main.hidden = false;
+      placeholder.hidden = true;
+      return;
+    }
 
     buffer.src = source;
     buffer.dataset.gallerySource = source;
@@ -91,15 +117,14 @@
     ];
     gallery.dataset.activeAnimations = String(animations.length);
 
-    try { await Promise.all(animations.map(animation => animation.finished)); } catch { return; }
+    await Promise.allSettled(animations.map(animation => animation.finished));
     if (currentRequest !== requestId) return;
     resetLayers();
   };
 
   const show = button => {
-    if (!button) return;
     updateControls(button);
-    void changeImage(button.dataset.gallerySource || '');
+    void changeImage(button?.dataset.gallerySource || '');
   };
 
   const move = direction => {
@@ -111,7 +136,7 @@
 
   gallery.addEventListener('click', event => {
     const thumbnail = event.target.closest('[data-gallery-image]');
-    if (thumbnail && gallery.contains(thumbnail)) {
+    if (thumbnail && activeGroup?.contains(thumbnail)) {
       show(thumbnail);
       return;
     }
@@ -119,6 +144,12 @@
     else if (event.target.closest('[data-gallery-next]')) move(1);
   });
   frame.addEventListener('dragstart', event => event.preventDefault());
+  gallery.closest('.details').addEventListener('productvariantchange', event => {
+    activeGroup = groups.find(group => group.dataset.galleryImages === event.detail.variantId);
+    groups.forEach(group => { group.hidden = group !== activeGroup; });
+    images = [...(activeGroup?.querySelectorAll('[data-gallery-image]') ?? [])];
+    show(images[0]);
+  });
 
   main.dataset.gallerySource = main.currentSrc || main.getAttribute('src') || '';
   frame.dataset.currentSource = main.dataset.gallerySource;

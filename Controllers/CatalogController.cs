@@ -32,9 +32,13 @@ public class CatalogController(ICatalogQueryService catalog) : Controller
     public IActionResult Hits(string? sort, string? search, int[]? brandIds) =>
         RedirectToAction(nameof(Index), new { tag = "popular", sort, search, brandIds });
 
-    public IActionResult Details(int id)
+    [HttpGet]
+    public async Task<IActionResult> Details(int id, int? variantId = null, CancellationToken cancellationToken = default)
     {
-        var product = catalog.GetProduct(id);
-        return product is null ? NotFound() : View(product);
+        var product = await catalog.GetProductAsync(id, cancellationToken);
+        if (product is null) return NotFound();
+
+        ViewData["SelectedVariantId"] = variantId;
+        return View(product);
     }
 }

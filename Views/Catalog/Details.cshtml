@@ -2,67 +2,105 @@
 @{
   ViewData["Title"] = $"{Model.BrandName} {Model.Name}";
   const string ImageRevision = "20260913-3xl-reframe";
-  string VersionedImageUrl(string imageUrl) => $"{imageUrl}{(imageUrl.Contains('?') ? '&' : '?')}v={ImageRevision}";
-  var images = Model.GalleryImageUrls;
+  string VersionedImageUrl(string url) => $"{url}{(url.Contains('?') ? '&' : '?')}v={ImageRevision}";
+  var selectedId = ViewData["SelectedVariantId"] as int?;
+  IReadOnlyList<ShoeStore.Models.ProductCardVariantViewModel> variants = Model.Variants.Count > 0
+    ? Model.Variants
+    : [new() {
+      Id = Model.VariantId,
+      Sizes = Model.Sizes,
+      Photos = Model.GalleryImageUrls.Select(url => new ShoeStore.Models.ProductGalleryPhoto(url, url)).ToArray()
+    }];
+  var selected = variants.FirstOrDefault(variant => variant.Id == selectedId)
+    ?? variants.FirstOrDefault(variant => variant.IsDefault) ?? variants[0];
+  var initialImage = selected.Photos.FirstOrDefault()?.ImageUrl;
 }
 
 <section class="details content">
   <div class="detail-gallery" data-product-gallery>
     <div class="detail-image" role="group" aria-label="Галерея фотографий @Model.BrandName @Model.Name">
-      @if (images.Count > 0)
-      {
-        <img src="@VersionedImageUrl(images[0])" alt="@Model.BrandName @Model.Name" data-gallery-main decoding="async" draggable="false" />
-        <img class="gallery-image-buffer" alt="" data-gallery-buffer aria-hidden="true" draggable="false" />
-        <button class="gallery-control gallery-control--previous" type="button" data-gallery-previous aria-label="Предыдущее фото" hidden>←</button>
-        <button class="gallery-control gallery-control--next" type="button" data-gallery-next aria-label="Следующее фото" hidden>→</button>
-        <span class="gallery-counter" data-gallery-counter aria-live="polite">1 / @images.Count</span>
-      }
-      else
-      {
-        <span class="product-image-empty">Нет фотографии</span>
-      }
+      <img src="@(initialImage is null ? null : VersionedImageUrl(initialImage))" alt="@Model.BrandName @Model.Name"
+           data-gallery-main decoding="async" draggable="false" hidden="@(initialImage is null)" />
+      <span class="product-image-empty" data-gallery-empty hidden="@(initialImage is not null)">Нет фотографии</span>
+      <img class="gallery-image-buffer" alt="" data-gallery-buffer aria-hidden="true" draggable="false" />
+      <button class="gallery-control gallery-control--previous" type="button" data-gallery-previous aria-label="Предыдущее фото" hidden>←</button>
+      <button class="gallery-control gallery-control--next" type="button" data-gallery-next aria-label="Следующее фото" hidden>→</button>
+      <span class="gallery-counter" data-gallery-counter aria-live="polite" hidden="@(initialImage is null)">1 / @selected.Photos.Count</span>
     </div>
     <div class="gallery-thumbnails" aria-label="Фотографии модели">
-        <div class="gallery-thumbnails__group">
-          @for (var imageIndex = 0; imageIndex < images.Count; imageIndex++)
+      @foreach (var variant in variants)
+      {
+        <div class="gallery-thumbnails__group" data-gallery-images="@variant.Id" hidden="@(variant.Id != selected.Id)">
+          @for (var index = 0; index < variant.Photos.Count; index++)
           {
-            var galleryImage = VersionedImageUrl(images[imageIndex]);
-            <button class="gallery-thumbnail @(imageIndex == 0 ? "is-active" : "")" type="button" data-gallery-image data-gallery-source="@galleryImage" aria-label="Фото @(imageIndex + 1) товара @Model.Name" aria-pressed="@(imageIndex == 0 ? "true" : "false")">
-              <img src="@galleryImage" alt="" width="65" height="65" loading="lazy" decoding="async" fetchpriority="low" />
+            var photo = variant.Photos[index];
+            var active = variant.Id == selected.Id && index == 0;
+            var imageLabel = string.IsNullOrEmpty(variant.Name)
+              ? $"Фото {index + 1} товара {Model.Name}"
+              : $"Фото {index + 1} расцветки {variant.Name}";
+            <button class="gallery-thumbnail @(active ? "is-active" : "")" type="button"
+                    data-gallery-image data-gallery-source="@VersionedImageUrl(photo.ImageUrl)"
+                    aria-label="@imageLabel" aria-pressed="@(active ? "true" : "false")">
+              <img src="@photo.ThumbnailUrl" asp-append-version="true" alt="" width="65" height="65"
+                   loading="lazy" decoding="async" fetchpriority="low" />
             </button>
           }
         </div>
+      }
     </div>
   </div>
 
   <div>
     <p class="eyebrow">@Model.BrandName</p>
     <h1>@Model.Name</h1>
+    @if (Model.Variants.Count > 0)
+    {
+      <p class="color detail-color">Цвет: <b data-variant-label>@selected.Name</b></p>
+    }
+    @if (variants.Count > 1)
+    {
+      <div class="detail-variant-picker" role="group" aria-label="Выберите расцветку">
+        <span>Расцветка</span>
+        <div class="variant-picker">
+          @foreach (var variant in variants)
+          {
+            var active = variant.Id == selected.Id;
+            <button type="button" class="color-swatch @(active ? "is-selected" : "")" style="--swatch:@variant.Swatch"
+                    title="@variant.Name" aria-label="@variant.Name" aria-pressed="@(active ? "true" : "false")"
+                    data-variant-choice data-variant-id="@variant.Id" data-variant-name="@variant.Name"></button>
+          }
+        </div>
+      </div>
+    }
     <h2>@Model.Price.ToString("N0") ₽</h2>
     <p class="description">@Model.Description</p>
     <form asp-controller="Cart" asp-action="Add" method="post" class="product-options" data-add-to-cart-form data-product-options data-quantity-limit="10" role="group" aria-label="Параметры товара">
-      <input type="hidden" name="variantId" value="@Model.VariantId" />
+      <input type="hidden" name="variantId" value="@selected.Id" data-variant-input />
       <span>Размер</span>
-      <div class="sizes" role="group" aria-label="Доступные размеры">
-        @if (Model.Sizes.Count > 0)
-        {
-          @foreach (var size in Model.Sizes)
+      @foreach (var variant in variants)
+      {
+        var active = variant.Id == selected.Id;
+        <div class="sizes" data-size-options="@variant.Id" role="group" aria-label="Доступные размеры" hidden="@(!active)">
+          @if (variant.Sizes.Count > 0)
           {
-            <label><input required type="radio" name="size" value="@size.Size" data-stock="@size.StockQuantity" /> <span>@size.Size</span></label>
+            @foreach (var size in variant.Sizes)
+            {
+              <label><input required type="radio" name="size" value="@size.Size" data-stock="@size.StockQuantity" disabled="@(!active)" /> <span>@size.Size</span></label>
+            }
           }
-        }
-        else
-        {
-          <p class="sizes-empty">Нет доступных размеров</p>
-        }
-      </div>
+          else
+          {
+            <p class="sizes-empty">Нет доступных размеров</p>
+          }
+        </div>
+      }
       <div class="product-order-controls">
         <div class="quantity-picker" aria-label="Количество товара">
           <button type="button" data-quantity-decrease aria-label="Уменьшить количество" disabled>−</button>
           <input type="number" name="quantity" value="1" min="1" max="10" data-quantity-input readonly aria-label="Количество" />
           <button type="button" data-quantity-increase aria-label="Увеличить количество" disabled>+</button>
         </div>
-        <button class="button product-order-controls__submit" type="submit" disabled="@(Model.Sizes.Count == 0)">Добавить в корзину</button>
+        <button class="button product-order-controls__submit" type="submit" disabled="@(selected.Sizes.Count == 0)">Добавить в корзину</button>
       </div>
       <p data-cart-error role="alert" hidden></p>
     </form>

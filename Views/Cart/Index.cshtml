@@ -27,7 +27,7 @@
         @foreach (var line in Model.Lines)
         {
           <article class="cart-reference-item" data-cart-line>
-            <a class="cart-reference-item__image" asp-controller="Catalog" asp-action="Details" asp-route-id="@line.Product.Id" aria-label="Открыть @line.Product.Brand.Name @line.Product.Name">
+            <a class="cart-reference-item__image" asp-controller="Catalog" asp-action="Details" asp-route-id="@line.Product.Id" asp-route-variantId="@line.Variant.Id" aria-label="Открыть @line.Product.Brand.Name @line.Product.Name">
               @{ var image = string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl; }
               @if (string.IsNullOrWhiteSpace(image))
               {

@@ -14,7 +14,13 @@
         @foreach (var (action, label) in links)
         {
           <a asp-controller="Cabinet" asp-action="@action" class="customer-account__nav-link"
-             aria-current="@(section == action ? "page" : null)">@label</a>
+             aria-current="@(section == action ? "page" : null)">
+            @if (section == action)
+            {
+              <span class="customer-account__indicator" aria-hidden="true"></span>
+            }
+            <span class="customer-account__label">@label</span>
+          </a>
         }
       </nav>
       <form asp-controller="Account" asp-action="Logout" method="post" class="customer-account__logout">

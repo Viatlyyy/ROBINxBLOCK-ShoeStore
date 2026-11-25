@@ -1,3 +1,5 @@
+:root { --account-ease: cubic-bezier(.16,1,.3,1); --account-duration: .42s; }
+
 .customer-account {
   width: min(100%, 1536px);
   margin-inline: auto;
@@ -18,17 +20,25 @@
 .customer-account__sidebar { padding-top: 8px; }
 .customer-account__nav { display: grid; gap: 3px; }
 .customer-account__nav-link {
+  position: relative;
   display: flex;
   min-height: 46px;
   align-items: center;
-  padding: 9px 15px;
-  border-inline-start: 3px solid transparent;
+  padding: 9px 15px 9px 18px;
   font-size: clamp(14px, 1.25vw, 18px);
   line-height: 1.2;
-  transition: background .2s ease, border-color .2s ease;
+  transition: background .28s ease, color .28s ease;
 }
-.customer-account__nav-link:hover { background: #f7f7f7; }
-.customer-account__nav-link[aria-current="page"] { border-inline-start-color: #111; background: #f0f0f0; font-weight: 700; }
+.customer-account__nav-link[aria-current="page"] { background: #f0f0f0; font-weight: 700; }
+.customer-account__indicator {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  border-inline-start: 3px solid currentColor;
+  pointer-events: none;
+}
+.customer-account__label { transition: transform .32s var(--account-ease); }
 
 .customer-account__logout { margin-top: 23px; padding-top: 13px; border-top: 1px solid #ddd; }
 .customer-account__logout button {
@@ -39,6 +49,7 @@
   color: #555;
   font: inherit;
   cursor: pointer;
+  transition: color .28s ease, transform .32s var(--account-ease);
 }
 .customer-account__logout button:hover { color: #111; text-decoration: underline; }
 
@@ -57,8 +68,14 @@
 }
 .customer-account :is(a, button, input):focus-visible { outline: 2px solid #111; outline-offset: 3px; }
 .account-muted, .customer-account time { color: #595959; }
-.account-text-link { display: inline-block; color: #444; text-decoration: underline; text-underline-offset: .2em; }
-.account-text-link:hover { color: #111; }
+.account-text-link {
+  display: inline-block;
+  color: #444;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+  transition: color .28s ease, text-underline-offset .3s var(--account-ease);
+}
+.account-text-link:hover { color: #111; text-underline-offset: .35em; }
 .account-action {
   display: inline-flex;
   min-height: 42px;
@@ -77,13 +94,17 @@
   transition: background .2s ease, color .2s ease, transform .2s cubic-bezier(.16,1,.3,1);
 }
 .account-action:hover { background: #111; color: #fff; transform: translateY(-1px); }
-.account-action:active { transform: translateY(1px); }
+.account-action:active { transform: translateY(1px) scale(.98); }
 .account-action--primary { min-height: 48px; padding-inline: 22px; background: #111; color: #fff; }
 .account-action--primary:hover { background: #333; }
 .account-action:disabled { opacity: .65; cursor: wait; transform: none; }
 
 .customer-overview { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-.account-panel { padding: clamp(17px, 2.15vw, 30px); border: 1px solid #ddd; }
+.account-panel {
+  padding: clamp(17px, 2.15vw, 30px);
+  border: 1px solid #ddd;
+  transition: border-color .3s ease, box-shadow .4s var(--account-ease), transform .4s var(--account-ease);
+}
 .account-panel h2 { margin-bottom: 18px; font-size: clamp(23px, 2.25vw, 32px); }
 .account-panel__contact { display: grid; gap: 6px; margin-bottom: 21px; overflow-wrap: anywhere; }
 .account-panel__contact :not(strong) { color: #595959; }
@@ -107,6 +128,7 @@
   height: 100%;
   padding: 5%;
   object-fit: contain;
+  transition: transform .48s var(--account-ease);
 }
 .account-order-image--empty { display: grid; place-items: center; color: #595959; font-size: 13px; }
 
@@ -121,7 +143,9 @@
   padding: 8px 8px 14px;
   border: 1px solid #dedede;
 }
-.account-product-grid .product:hover { transform: translateY(-3px); }
+.account-product-grid .product {
+  transition: border-color .3s ease, box-shadow .4s var(--account-ease), transform .4s var(--account-ease);
+}
 .account-product-grid .product :is(h3, strong, .brand) { margin-inline: 7px; }
 .account-product-grid .product h3 { font-size: 17px; }
 .account-product-grid .product strong { font-size: 14px; }
@@ -169,7 +193,14 @@
 
 .customer-profile { display: grid; width: min(100%, 580px); gap: 10px; }
 .customer-profile label { font-weight: 700; }
-.customer-profile input { width: 100%; min-height: 48px; font-size: 16px; border-color: #c9c9c9; }
+.customer-profile input {
+  width: 100%;
+  min-height: 48px;
+  font-size: 16px;
+  border-color: #c9c9c9;
+  transition: border-color .26s ease, box-shadow .26s ease;
+}
+.customer-profile input:focus-visible:not([readonly], .input-validation-error) { border-color: #111; box-shadow: 0 4px 14px rgb(0 0 0 / 6%); }
 .customer-profile input[readonly] { background: #f3f3f3; color: #555; }
 .customer-profile label:not(:first-of-type) { margin-top: 11px; }
 .customer-profile .account-action { margin-top: 13px; }
@@ -178,21 +209,66 @@
 .customer-profile .input-validation-error { border-color: #782820; }
 .customer-profile__notice { margin: 0 0 5px; padding: 12px; border-inline-start: 3px solid #111; background: #f4f4f4; }
 
+.account-orders__row, .account-order-items li { transition: background .3s ease; }
+.account-panel:focus-within, .account-product-grid .product:focus-within { border-color: #aaa; }
+.account-orders__row:focus-within { background: #f7f7f7; }
+
+@media (hover: hover) {
+  .customer-account__nav-link:hover { background: #f7f7f7; }
+  .customer-account__nav-link:hover .customer-account__label { transform: translateX(4px); }
+  .customer-account__logout button:hover { transform: translateX(3px); }
+  .account-panel:hover, .account-product-grid .product:hover {
+    border-color: #c5c5c5;
+    box-shadow: 0 13px 27px rgb(0 0 0 / 7%);
+    transform: translateY(-3px);
+  }
+  .account-orders__row:hover, .account-order-items li:hover { background: #f7f7f7; }
+  :is(.account-latest, .account-orders__row, .account-order-items li):hover .account-order-image > img { transform: scale(1.035); }
+  .customer-profile input:not([readonly], .input-validation-error):hover { border-color: #818181; }
+}
+
+@media (hover: none) {
+  .account-product-grid .product:hover,
+  .account-product-grid .product:hover img { transform: none; }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @view-transition { navigation: auto; }
-  .customer-account__content {
-    view-transition-name: account-content;
-    animation: account-appear .28s cubic-bezier(.16,1,.3,1) both;
+
+  .customer-account__content { view-transition-name: account-content; }
+  .customer-account__indicator { view-transition-name: account-active-tab; }
+
+  ::view-transition-group(account-content) {
+    animation-duration: var(--account-duration);
+    animation-timing-function: var(--account-ease);
   }
-  :root:active-view-transition .customer-account__content { animation: none; }
-  ::view-transition-old(root) { animation: none; opacity: 0; }
-  ::view-transition-new(root) { animation: none; }
-  ::view-transition-old(account-content) { animation: account-leave .16s ease both; }
-  ::view-transition-new(account-content) { animation: account-appear .28s cubic-bezier(.16,1,.3,1) both; }
-  .customer-profile__notice { animation: account-appear .24s cubic-bezier(.16,1,.3,1) both; }
+  ::view-transition-group(account-active-tab) {
+    animation-duration: var(--account-duration);
+    animation-timing-function: var(--account-ease);
+  }
+  ::view-transition-old(root), ::view-transition-old(account-active-tab) { animation: none; opacity: 0; }
+  ::view-transition-new(root), ::view-transition-new(account-active-tab) { animation: none; }
+  ::view-transition-old(account-content) { animation: account-leave .24s ease both; }
+  ::view-transition-new(account-content) { animation: account-appear var(--account-duration) var(--account-ease) both; }
+
+  html:not(.account-navigation-transition) .customer-account :is(
+    .customer-account__title, .customer-account__sidebar,
+    .customer-account__content > :not(.customer-overview, .account-orders, .account-product-grid),
+    .customer-overview > .account-panel, .account-orders__row, .account-product-grid > .product
+  ) {
+    animation: account-appear .46s var(--account-ease) both;
+  }
+  html:not(.account-navigation-transition) .customer-account :is(
+    .customer-account__sidebar, .customer-overview > .account-panel:nth-child(2),
+    .account-orders__row:nth-child(2), .account-product-grid > .product:nth-child(2)
+  ) { animation-delay: .06s; }
+  html:not(.account-navigation-transition) .customer-account :is(
+    .account-overview-favorites, .account-orders__row:nth-child(3), .account-product-grid > .product:nth-child(3)
+  ) { animation-delay: .12s; }
+  .customer-profile__notice { animation: account-appear .35s var(--account-ease) both; }
 }
-@keyframes account-appear { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
-@keyframes account-leave { to { opacity: 0; transform: translateY(-4px); } }
+@keyframes account-appear { from { opacity: 0; translate: 0 12px; } to { opacity: 1; translate: none; } }
+@keyframes account-leave { to { opacity: 0; translate: 0 -6px; } }
 
 @media (max-width: 1000px) {
   .account-latest { grid-template-columns: minmax(0, .85fr) minmax(0, 1fr); gap: 10px; }
@@ -219,6 +295,9 @@
 @media (prefers-reduced-motion: reduce) {
   .customer-account-page .header,
   .customer-account-page .header *,
+  .customer-account-page .header :is(a, button)::after,
   .customer-account * { animation: none !important; transition: none !important; }
-  .customer-account :is(.account-action, .product, .product img):hover { transform: none; }
+  .customer-account-page .header :is(a, button),
+  .customer-account :is(.account-action, .account-panel, .account-order-image > img, .customer-account__label,
+    .customer-account__logout button, .product, .product img, .favorite-button, .color-swatch) { transform: none !important; }
 }

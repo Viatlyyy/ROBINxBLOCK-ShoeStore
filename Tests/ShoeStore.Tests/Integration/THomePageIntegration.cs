@@ -35,7 +35,7 @@ public class THomePageIntegration
         {
             Products = [new ProductCardViewModel
             {
-                Id = 7001, Name = "Модель из базы", BrandName = "Тестовый бренд", Price = 12345m,
+                Id = 7001, IsNew = true, IsPopular = true, Name = "Модель из базы", BrandName = "Тестовый бренд", Price = 12345m,
                 ImageUrl = "/images/hero/9060-urban-feet-v6-960.webp"
             }],
             Brands = HomePageDemoData.Create().Brands
@@ -167,53 +167,77 @@ public class THomePageIntegration
     [TestMethod]
     [DataRow("/Catalog")]
     [DataRow("/Catalog/Index")]
-    [DataRow("/Catalog?page=2")]
-    [DataRow("/Catalog?q=9060&brand=Nike")]
-    public async Task Catalog_GeneralPageDoesNotExist(string path)
+    public async Task Catalog_DirectVisitDisplaysFiltersAndClickableCards(string path)
     {
-        using var response = await client.GetAsync(path);
-
-        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
-        catalog.Verify(service => service.GetCatalogAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        var html = await client.GetStringAsync(path);
+        StringAssert.Contains(html, "id=\"catalog-filters\"");
+        StringAssert.Contains(html, "action=\"/Catalog\"");
+        StringAssert.Contains(html, "data-url=\"/Catalog/SearchResults\"");
+        StringAssert.Contains(html, "href=\"/Catalog/Details/7001\"");
+        StringAssert.Contains(html, "data-product-badge=\"new\"");
+        StringAssert.Contains(html, "data-product-badge=\"popular\"");
+        StringAssert.Contains(html, "/js/catalog-search.js");
+        Assert.IsFalse(html.Contains("hero-carousel"));
+        catalog.Verify(service => service.GetHomeAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestMethod]
-    public async Task Home_PromotionalLinksOpenHomeCatalog()
+    public async Task Home_ShowsOriginalGridAndLinksToCollections()
     {
-        foreach (var path in new[] { "/", "/Home/Sort?tag=new&sort=price-asc" })
+        var html = await client.GetStringAsync("/");
+        Assert.IsFalse(html.Contains("catalog-filters"));
+        Assert.IsFalse(html.Contains("catalog-search.js"));
+        Assert.IsFalse(html.Contains("data-product-badge"));
+        StringAssert.Contains(html, "href=\"/Catalog/Details/7001\"");
+        foreach (var region in new[] { "header", "footer" })
         {
-            var html = await client.GetStringAsync(path);
-            var allModelsLink = Regex.Match(html, "<a\\b[^>]*href=\"([^\"]+)\"[^>]*>\\s*Все модели");
-            Assert.IsTrue(allModelsLink.Success);
-            var destination = WebUtility.HtmlDecode(allModelsLink.Groups[1].Value);
-            Assert.AreEqual("/#catalog", destination);
-            var catalogLinks = Regex.Matches(html, "<a\\b[^>]*href=\"([^\"]*#catalog)\"[^>]*>");
-            Assert.AreEqual(10, catalogLinks.Count, "Ссылки баннеров, фотографий и «Все модели» должны вести к каталогу.");
-            foreach (Match link in catalogLinks)
-                Assert.AreEqual(destination, WebUtility.HtmlDecode(link.Groups[1].Value));
-            Assert.IsFalse(Regex.IsMatch(html, "href=\"/Catalog(?:/(?:Index|New|Hits))?/?(?:[#?\"])", RegexOptions.IgnoreCase));
-            StringAssert.Contains(html, "href=\"/Catalog/Details/7001\"");
-            var catalogHtml = await client.GetStringAsync(destination);
-            StringAssert.Contains(catalogHtml, "id=\"catalog\"");
+            var regionHtml = Regex.Match(html, $"<{region}\\b[^>]*>[\\s\\S]*?</{region}>").Value;
+            var nav = Regex.Match(regionHtml, "<nav\\b[^>]*>[\\s\\S]*?</nav>");
+            Assert.IsTrue(nav.Success, $"Отсутствует навигация в {region}.");
+            StringAssert.Contains(nav.Value, "href=\"/Catalog\"");
+            StringAssert.Contains(nav.Value, "href=\"/Catalog?tag=new\"");
+            StringAssert.Contains(nav.Value, "href=\"/Catalog?tag=popular\"");
         }
+        var content = Regex.Match(html, "<main>([\\s\\S]*?)</main>").Value;
+        Assert.AreEqual(4, Regex.Matches(content, "href=\"/Catalog\\?tag=new\"").Count);
+        Assert.AreEqual(5, Regex.Matches(content, "href=\"/Catalog\\?tag=popular\"").Count);
+        StringAssert.Contains(content, "href=\"/Catalog\">Все модели");
     }
 
     [TestMethod]
-    public async Task HomeAndCollections_DoNotAttemptDatabaseConnections()
+    [DataRow("/Catalog/New", "/Catalog", "new")]
+    [DataRow("/Catalog/Hits", "/Catalog", "popular")]
+    [DataRow("/Home/Sort?tag=new", "/Catalog", "new")]
+    [DataRow("/Home/SearchResults?tag=new", "/Catalog/SearchResults", "new")]
+    public async Task LegacyRoutes_KeepSelectionAndResponseType(string path, string target, string tag)
     {
-        using var home = await client.GetAsync("/");
-        Assert.AreEqual(HttpStatusCode.OK, home.StatusCode);
-        foreach (var path in new[] { "/Catalog/Hits", "/Catalog/New" })
-        {
-            var html = WebUtility.HtmlDecode(await client.GetStringAsync(path));
-            StringAssert.Contains(html, "Реализуется в будущем");
-            Assert.AreEqual(0, Regex.Matches(html, "<article class=\"placeholder-card\"").Count);
-        }
-        catalog.Verify(service => service.GetCatalogAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
+        var separator = path.Contains('?') ? '&' : '?';
+        using var response = await client.GetAsync($"{path}{separator}sort=price-asc&search=Dunk&brandIds=3&brandIds=7");
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        var location = new Uri(client.BaseAddress!, response.Headers.Location!);
+        Assert.AreEqual(target, location.AbsolutePath);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(location.Query);
+        Assert.AreEqual(tag, query["tag"].ToString());
+        Assert.AreEqual("price-asc", query["sort"].ToString());
+        Assert.AreEqual("Dunk", query["search"].ToString());
+        CollectionAssert.AreEqual(new[] { "3", "7" }, query["brandIds"].ToArray());
+        var html = await client.GetStringAsync(location);
+        Assert.AreEqual(target == "/Catalog", html.Contains("<html"));
+        StringAssert.Contains(html, "data-product-badge=\"popular\"");
         databaseGuard.Verify(guard => guard.ConnectionOpening(It.IsAny<DbConnection>(),
             It.IsAny<ConnectionEventData>(), It.IsAny<InterceptionResult>()), Times.Never);
         databaseGuard.Verify(guard => guard.ConnectionOpeningAsync(It.IsAny<DbConnection>(),
             It.IsAny<ConnectionEventData>(), It.IsAny<InterceptionResult>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [TestMethod]
+    public async Task Catalog_ExplainsEmptyCatalogAndEmptySelection()
+    {
+        homeModel.Products.Clear();
+        StringAssert.Contains(WebUtility.HtmlDecode(await client.GetStringAsync("/Catalog")), "В каталоге пока нет товаров.");
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/Catalog/SearchResults?search=Dunk"));
+        StringAssert.Contains(html, "По выбранным параметрам ничего не найдено.");
+        Assert.IsFalse(html.Contains("<html"));
     }
 
     [TestMethod]

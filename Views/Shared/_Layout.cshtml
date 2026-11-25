@@ -1,3 +1,4 @@
+@inject ShoeStore.Services.AvatarStore Avatars
 @{
   var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
@@ -76,7 +77,7 @@
   {
     <link rel="stylesheet" href="~/css/customer-account.css" asp-append-version="true" />
     <link rel="expect" href="#account-content" blocking="render" />
-    <script src="~/js/customer-account-motion.js" asp-append-version="true"></script>
+    <script src="~/js/customer-account-motion.js" asp-append-version="true" data-cabinet-root="@Url.Action("Index", "Cabinet")"></script>
   }
 </head>
 <body class="storefront-shell @(isCabinet ? "customer-account-page" : null)">
@@ -100,7 +101,13 @@
         displayName = string.IsNullOrWhiteSpace(displayName) ? "Пользователь" : displayName.Trim();
         var avatarLetter = System.Globalization.StringInfo.GetNextTextElement(displayName).ToUpperInvariant();
         <div class="account-menu" data-account-menu>
-          <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>@avatarLetter</button>
+          <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>
+            @if (await Avatars.HasCurrentAvatarAsync(Context.RequestAborted))
+            {
+              <img src="@Url.Action("Avatar", "Cabinet")" alt="" width="32" height="32" />
+            }
+            else { @avatarLetter }
+          </button>
           <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
             <p class="account-menu__email">@displayName</p>
             <a asp-controller="Cabinet" asp-action="Index" role="menuitem">Личный кабинет</a>
@@ -124,7 +131,11 @@
     }
     @RenderBody()
   </main>
-  @if (hasProductCards) { <p class="favorite-feedback sr-only" aria-live="polite" data-favorite-announcement></p> }
+  @if (hasProductCards)
+  {
+    <p class="sr-only" role="status" data-favorite-announcement></p>
+    <p class="favorite-feedback is-error" role="alert" data-favorite-error hidden></p>
+  }
   <footer class="store-footer" id="contacts">
     <div class="store-footer__grid">
       <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a></div>

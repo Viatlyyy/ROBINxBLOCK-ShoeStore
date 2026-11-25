@@ -13,10 +13,11 @@ public sealed class CustomerProfileViewModel
     public string? Email { get; set; }
 }
 
-public sealed record AccountOrderSummary(Guid PublicId, int Number, DateTime CreatedAt, string Status, decimal Total, string? ImageUrl);
+public sealed record AccountOrderSummary(Guid PublicId, int Number, DateTime CreatedAt, string Status, decimal Total,
+    string? ImageUrl, string? ProductName = null, int? Size = null, int AdditionalLines = 0);
 
-public sealed record AccountOverviewViewModel(CustomerProfileViewModel Profile, AccountOrderSummary? LatestOrder,
-    IReadOnlyList<ProductCardViewModel> Favorites);
+public sealed record AccountOverviewViewModel(CustomerProfileViewModel Profile, int OrderCount, int FavoriteCount,
+    IReadOnlyList<AccountOrderSummary> LatestOrders, IReadOnlyList<ProductCardViewModel> Recommendations);
 
 public sealed record AccountOrdersViewModel(IReadOnlyList<AccountOrderSummary> Orders, int Page, int TotalPages);
 

@@ -1,0 +1,10 @@
+@{
+  Layout = "_CabinetLayout";
+  ViewData["Title"] = "Раздел временно недоступен";
+  var url = $"{Context.Request.PathBase}{Context.Request.Path}{Context.Request.QueryString}";
+}
+<div class="account-empty">
+  <span class="account-empty__icon"><partial name="_AccountIcon" model='"orders"' /></span>
+  <p>Не удалось загрузить данные личного кабинета.</p>
+  <a class="account-action" href="@url">Повторить попытку <partial name="_AccountIcon" model='"arrow"' /></a>
+</div>

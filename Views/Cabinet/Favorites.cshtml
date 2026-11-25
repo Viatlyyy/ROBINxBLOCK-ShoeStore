@@ -2,17 +2,13 @@
 @{
   Layout = "_CabinetLayout";
   ViewData["Title"] = "Избранное";
+  ViewData["FavoriteCount"] = Model.Count;
+  ViewData["HideEmptyState"] = Model.Count > 0;
 }
-<div class="account-section-header">
-  <h2>Избранное</h2>
-  <a class="account-text-link" asp-controller="Catalog" asp-action="Index" data-favorite-list-link>Перейти в каталог</a>
-</div>
-<div class="product-grid account-product-grid" data-favorites-list hidden="@(Model.Count == 0)">
+<div class="account-product-grid" data-favorites-list hidden="@(Model.Count == 0)">
   @foreach (var product in Model)
   {
-    <partial name="_ProductCard" model="product" />
+    <partial name="_FavoriteProduct" model="product" />
   }
 </div>
-<div class="account-empty" data-favorite-empty hidden="@(Model.Count > 0)">
-  <p>Пока нет избранных товаров.</p>
-</div>
+<partial name="_EmptyState" model='(("heart", "Пока нет избранных товаров.", "Нажмите на сердце в каталоге, чтобы сохранить понравившуюся модель."))' />

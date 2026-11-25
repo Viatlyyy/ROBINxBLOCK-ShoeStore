@@ -109,7 +109,7 @@ public class TCartIntegration
 
     private async Task SignInForCheckoutAsync()
     {
-        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims", "Favorites" })
+        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims", "UserAvatars", "Favorites" })
         {
             await using var copy = new NpgsqlCommand($"""CREATE TEMP TABLE "{table}" (LIKE public."{table}" INCLUDING ALL)""", connection);
             await copy.ExecuteNonQueryAsync();

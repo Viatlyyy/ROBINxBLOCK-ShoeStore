@@ -1,34 +1,58 @@
+@using System.Security.Claims
 @{
   Layout = "_Layout";
-  ViewData["Title"] ??= "Личный кабинет";
-  var section = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
-  if (section == "Order") section = "Orders";
-  var links = new[] { ("Index", "Обзор"), ("Profile", "Профиль"), ("Orders", "Заказы"), ("Favorites", "Избранное") };
+  var action = ViewContext.RouteData.Values["action"]?.ToString();
+  var section = action == "Order" ? "Orders" : action == "SetFavorite" ? "Favorites" : action;
+  var title = ViewData["Title"] as string ?? "Личный кабинет";
+  ViewData["Title"] = title;
+  var links = new[] { ("Index", "Обзор", "home"), ("Profile", "Профиль", "profile"),
+    ("Orders", "Мои заказы", "orders"), ("Favorites", "Избранное", "heart") };
+  var name = User.FindFirst(ClaimTypes.GivenName)?.Value?.Trim();
+  var email = User.FindFirst(ClaimTypes.Email)?.Value;
+  var favoriteCount = ViewData["FavoriteCount"] as int?;
 }
-
-<section class="customer-account">
-  <h1 class="customer-account__title">Личный кабинет</h1>
-  <div class="customer-account__layout">
-    <aside class="customer-account__sidebar">
-      <nav class="customer-account__nav" aria-label="Разделы личного кабинета">
-        @foreach (var (action, label) in links)
-        {
-          <a asp-controller="Cabinet" asp-action="@action" class="customer-account__nav-link"
-             aria-current="@(section == action ? "page" : null)">
-            @if (section == action)
-            {
-              <span class="customer-account__indicator" aria-hidden="true"></span>
-            }
-            <span class="customer-account__label">@label</span>
-          </a>
-        }
-      </nav>
-      <form asp-controller="Account" asp-action="Logout" method="post" class="customer-account__logout">
-        <button type="submit">Выйти</button>
-      </form>
-    </aside>
-    <div id="account-content" class="customer-account__content">
-      @RenderBody()
+<div class="customer-account">
+  <aside class="customer-account__sidebar">
+    <div class="customer-account__identity">
+      <partial name="_AccountAvatar" />
+      <div class="customer-account__identity-text">
+        <strong>@(string.IsNullOrWhiteSpace(name) ? "Покупатель" : name)</strong>
+        @if (!string.IsNullOrWhiteSpace(email)) { <span>@email</span> }
+      </div>
     </div>
+    <nav class="customer-account__nav" aria-label="Разделы личного кабинета">
+      @foreach (var (target, label, icon) in links)
+      {
+        <a asp-controller="Cabinet" asp-action="@target" class="customer-account__nav-link"
+           aria-current="@(section == target ? "page" : null)">
+          <partial name="_AccountIcon" model="icon" />
+          <span>@label</span>
+        </a>
+      }
+    </nav>
+    <form asp-controller="Account" asp-action="Logout" method="post" class="customer-account__logout">
+      <button type="submit"><partial name="_AccountIcon" model='"logout"' /> Выйти</button>
+    </form>
+  </aside>
+  <div id="account-content" class="customer-account__content">
+    <nav class="account-breadcrumbs" aria-label="Хлебные крошки">
+      <ol>
+        <li><a asp-controller="Home" asp-action="Index">Главная</a></li>
+        @if (action != "Index")
+        {
+          <li><a asp-controller="Cabinet" asp-action="Index">Личный кабинет</a></li>
+          @if (action == "Order") { <li><a asp-action="Orders">Мои заказы</a></li> }
+        }
+        <li aria-current="page">@title</li>
+      </ol>
+    </nav>
+    <div class="account-title-line">
+      <h1 class="customer-account__title" tabindex="-1">@title</h1>
+      @if (favoriteCount is int count)
+      {
+        <span class="account-count">Сохранено <strong data-favorites-count>@count</strong></span>
+      }
+    </div>
+    @RenderBody()
   </div>
-</section>
+</div>

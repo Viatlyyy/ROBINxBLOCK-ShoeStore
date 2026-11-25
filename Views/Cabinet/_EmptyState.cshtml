@@ -1,0 +1,9 @@
+@model (string Icon, string Title, string Description)
+<div class="account-empty" data-favorite-empty hidden="@(ViewData["HideEmptyState"] is true)">
+  <span class="account-empty__icon"><partial name="_AccountIcon" model="Model.Icon" /></span>
+  <p><strong>@Model.Title</strong></p>
+  <p class="account-muted">@Model.Description</p>
+  <a class="account-action" asp-controller="Catalog" asp-action="Index" data-favorite-list-link>
+    Перейти в каталог <partial name="_AccountIcon" model='"arrow"' />
+  </a>
+</div>

@@ -59,11 +59,13 @@
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/cart-fly.css" asp-append-version="true" />
-  @if (isCartIndex)
+  @if (isCartIndex || isOrderPage)
   {
-    <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/purchase-flow.css" asp-append-version="true" />
+    <link rel="expect" href="#purchase-content" blocking="render" />
+    <script src="~/js/purchase-motion.js" asp-append-version="true" data-purchase-root="@Url.Action("Index", "Cart")"></script>
   }
+  @if (isCartIndex) { <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" /> }
   @if (isHome || isCatalog || isCartIndex || isProductDetails || isCabinet)
   {
     <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" />
@@ -81,7 +83,10 @@
   }
 </head>
 <body class="storefront-shell @(isCabinet ? "customer-account-page" : null)">
-  @if (!isCabinet) { <script src="~/js/page-intro.js" asp-append-version="true"></script> }
+  @if (!isCabinet && !isCartIndex && !isOrderPage)
+  {
+    <script src="~/js/page-intro.js" asp-append-version="true" data-purchase-root="@(isHome || isCatalog || isProductDetails ? Url.Action("Index", "Cart") : null)"></script>
+  }
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
     <nav aria-label="Основная навигация">
@@ -176,6 +181,10 @@
     <script src="~/js/cart-fly.js" asp-append-version="true"></script>
   }
   @if (isCartIndex) { <script src="~/js/cart-quantity.js" asp-append-version="true"></script> }
+  @if (isOrderPage && action.Equals("Checkout", StringComparison.OrdinalIgnoreCase))
+  {
+    <script src="~/js/checkout-form.js" asp-append-version="true"></script>
+  }
   @if (isCatalog) { <script src="~/js/catalog-search.js" asp-append-version="true" defer></script> }
   @if (hasProductCards) { <script src="~/js/favorites.js" asp-append-version="true" defer></script> }
 </body>

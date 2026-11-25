@@ -8,7 +8,6 @@ namespace ShoeStore.Services;
 public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
 {
     private static readonly HashSet<string> DeliveryMethods = ["Курьер", "Самовывоз", "Пункт выдачи"];
-    private static readonly HashSet<string> PaymentMethods = ["card", "apple", "google", "cash"];
 
     public async Task<CheckoutResult> PlaceOrderAsync(
         CheckoutViewModel model,
@@ -19,7 +18,7 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
     {
         if (lines.Count == 0) return CheckoutResult.Failed("Корзина пуста.");
         if (!DeliveryMethods.Contains(model.DeliveryMethod)) return CheckoutResult.Failed("Выберите доступный способ доставки.");
-        if (!PaymentMethods.Contains(model.PaymentMethod)) return CheckoutResult.Failed("Выберите доступный способ оплаты.");
+        if (model.PaymentMethod != "cash") return CheckoutResult.Failed("Выберите доступный способ оплаты.");
 
         var strategy = db.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(async () =>

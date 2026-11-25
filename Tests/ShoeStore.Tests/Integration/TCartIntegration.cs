@@ -101,6 +101,28 @@ public class TCartIntegration
         }));
 
     [TestMethod]
+    public async Task Checkout_OffersPaymentOnReceiptWithoutCollectingCardDetails()
+    {
+        (await Post("Add", 37)).EnsureSuccessStatusCode();
+        var html = WebUtility.HtmlDecode(await client.GetStringAsync("/Cart/Checkout"));
+        StringAssert.Contains(html, "Оплата при получении");
+        Assert.IsFalse(html.Contains("Номер карты", StringComparison.Ordinal));
+        Assert.IsFalse(html.Contains("Apple Pay", StringComparison.Ordinal));
+        Assert.IsFalse(html.Contains("Google Pay", StringComparison.Ordinal));
+
+        var confirmation = Regex.Match(html, "name=\"confirmation\" value=\"([^\"]+)\"").Groups[1].Value;
+        using var data = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["__RequestVerificationToken"] = token, ["confirmation"] = confirmation,
+            ["CustomerName"] = "Покупатель", ["Phone"] = "+79000000000",
+            ["DeliveryMethod"] = "Самовывоз", ["PaymentMethod"] = "card"
+        });
+        var response = await client.PostAsync("/Cart/Checkout", data);
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "Выберите доступный способ оплаты");
+    }
+
+    [TestMethod]
     public async Task Checkout_RequiresItemsAndConfirmationWithCurrentQuantity()
     {
         Assert.AreEqual(HttpStatusCode.Redirect, (await client.GetAsync("/Cart/Checkout")).StatusCode);

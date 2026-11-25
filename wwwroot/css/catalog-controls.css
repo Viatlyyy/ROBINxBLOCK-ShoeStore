@@ -1,4 +1,4 @@
-.home-catalog { scroll-margin-top: 100px; }
+.catalog-page h1 { margin: 0; font-size: clamp(28px, 4vw, 42px); letter-spacing: -.045em; }
 
 .catalog-search {
   max-width: 700px;

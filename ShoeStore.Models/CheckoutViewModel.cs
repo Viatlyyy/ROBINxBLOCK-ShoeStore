@@ -15,7 +15,7 @@ public class CheckoutViewModel : IValidatableObject
     [StringLength(20)] public string? Apartment { get; set; }
     [StringLength(12)] public string? Postcode { get; set; }
     [StringLength(500)] public string? Comment { get; set; }
-    [Required, StringLength(24)] public string PaymentMethod { get; set; } = "card";
+    [Required, StringLength(24)] public string PaymentMethod { get; set; } = "cash";
     public List<CartLine> Lines { get; set; } = [];
     public decimal Total => Lines.Sum(x => x.Total);
 

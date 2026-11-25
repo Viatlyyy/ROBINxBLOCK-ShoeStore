@@ -38,17 +38,8 @@
 
       <section class="checkout-panel" data-checkout-panel>
         <h2>Способ оплаты</h2>
-        <div class="payment-layout">
-          <div class="payment-options" role="radiogroup" aria-label="Способ оплаты">
-            <label class="payment-option"><input asp-for="PaymentMethod" type="radio" id="PaymentMethod-card" value="card" /><span><i>●</i>Банковская карта <b>VISA&nbsp; ◉ ◉</b></span></label>
-            <label class="payment-option"><input asp-for="PaymentMethod" type="radio" id="PaymentMethod-apple" value="apple" /><span><i>○</i>Apple Pay <b>Pay</b></span></label>
-            <label class="payment-option"><input asp-for="PaymentMethod" type="radio" id="PaymentMethod-google" value="google" /><span><i>○</i>Google Pay <b>G Pay</b></span></label>
-            <label class="payment-option"><input asp-for="PaymentMethod" type="radio" id="PaymentMethod-cash" value="cash" /><span><i>○</i>Оплата при получении</span></label>
-          </div>
-          <div class="card-fields">
-            <label>Номер карты<input inputmode="numeric" autocomplete="off" placeholder="0000 0000 0000 0000" /></label>
-            <div><label>ММ/ГГ<input inputmode="numeric" autocomplete="off" placeholder="ММ/ГГ" /></label><label>CVC<input inputmode="numeric" autocomplete="off" placeholder="123" /></label></div>
-          </div>
+        <div class="payment-options">
+          <label class="payment-option"><input asp-for="PaymentMethod" type="radio" id="PaymentMethod-cash" value="cash" checked /><span><i>●</i>Оплата при получении</span></label>
         </div>
       </section>
 

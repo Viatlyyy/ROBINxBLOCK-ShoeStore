@@ -11,6 +11,7 @@
   }
   <div class="account-layout">
     <form method="post" class="account-form-card account-form-card--register" data-account-form novalidate>
+      <input asp-for="ReturnUrl" type="hidden" />
       <div asp-validation-summary="All" class="account-validation"></div>
       <div class="account-form-grid"><label>Имя<input asp-for="FirstName" placeholder="Введите имя" autocomplete="given-name" /></label><label>Фамилия<input name="lastName" placeholder="Введите фамилию" autocomplete="family-name" /></label></div>
       <div class="account-form-grid"><label>E-mail<input asp-for="Email" type="email" placeholder="example@email.com" autocomplete="email" /></label><label>Телефон<input name="phone" placeholder="+7 (___) ___-__-__" autocomplete="tel" /></label></div>
@@ -19,7 +20,7 @@
       <label class="account-check"><input asp-for="AcceptTerms" /><span></span>Я согласен с <u>условиями</u> и политикой конфиденциальности</label>
       <label class="account-check"><input type="checkbox" name="marketing" /><span></span>Получать новости и эксклюзивные предложения</label>
       <button class="button account-submit" type="submit">Создать аккаунт</button>
-      <a class="account-secondary" asp-action="Login">Уже есть аккаунт? Войти</a>
+      <a class="account-secondary" asp-action="Login" asp-route-returnUrl="@Model?.ReturnUrl">Уже есть аккаунт? Войти</a>
     </form>
 
     <aside class="account-benefit-card account-benefit-card--register" data-account-card>

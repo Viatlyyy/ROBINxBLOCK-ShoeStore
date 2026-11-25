@@ -15,7 +15,7 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
     [HttpGet]
     public IActionResult Login(string? returnUrl = null) => User.Identity?.IsAuthenticated == true
         ? AfterLogin(returnUrl)
-        : View(new LoginViewModel { ReturnUrl = returnUrl });
+        : View(new LoginViewModel { ReturnUrl = IsLocalReturnUrl(returnUrl) ? returnUrl : null });
 
     [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("authentication")]
     public async Task<IActionResult> Login(LoginViewModel vm)
@@ -45,13 +45,16 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
         return View(vm);
     }
 
-    private IActionResult AfterLogin(string? returnUrl) =>
-        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
-            ? LocalRedirect(returnUrl)
-            : RedirectToAction("Index", "Home");
+    private bool IsLocalReturnUrl([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? returnUrl) =>
+        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl);
 
-    // Показываем форму регистрации.
-    public IActionResult Register() => View();
+    private IActionResult AfterLogin(string? returnUrl) => IsLocalReturnUrl(returnUrl)
+        ? LocalRedirect(returnUrl)
+        : RedirectToAction("Index", "Home");
+
+    [HttpGet]
+    public IActionResult Register(string? returnUrl = null) =>
+        View(new RegisterViewModel { ReturnUrl = IsLocalReturnUrl(returnUrl) ? returnUrl : null });
 
     // Обрабатываем данные отправленной формы.
     [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("authentication")]
@@ -88,8 +91,14 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
                 return View(vm);
             }
 
-            // Передаём сообщение об успехе и снова открываем форму регистрации.
-            TempData["Message"] = "Регистрация успешно завершена.";
+            const string message = "Регистрация успешно завершена.";
+            if (IsLocalReturnUrl(vm.ReturnUrl))
+            {
+                TempData["RegistrationMessage"] = message;
+                return RedirectToAction(nameof(Login), new { returnUrl = vm.ReturnUrl });
+            }
+
+            TempData["Message"] = message;
             return RedirectToAction(nameof(Register));
         }
 

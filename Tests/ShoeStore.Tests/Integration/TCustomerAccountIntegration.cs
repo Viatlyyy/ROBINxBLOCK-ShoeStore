@@ -115,6 +115,169 @@ public class TCustomerAccountIntegration
         });
     }
 
+    private const string CheckoutPath = "/Cart/Checkout";
+
+    private static void AssertCheckoutLogin(HttpResponseMessage response)
+    {
+        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        var redirect = new Uri(new Uri("http://localhost"), response.Headers.Location!);
+        Assert.AreEqual("/Account/Login", redirect.AbsolutePath);
+        Assert.AreEqual(CheckoutPath, Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(redirect.Query)["ReturnUrl"].ToString());
+    }
+
+    private static Task<HttpResponseMessage> AddToCart(HttpClient client, string product) =>
+        Post(client, "/Cart/Add", product, new() { ["variantId"] = "7", ["size"] = "42", ["quantity"] = "2" });
+
+    private static string Confirmation(string html)
+    {
+        var value = Regex.Match(html, "name=\"confirmation\" value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.IsTrue(Guid.TryParse(value, out _));
+        return value;
+    }
+
+    private async Task AssertNoNewOrdersAsync()
+    {
+        await using var check = new NpgsqlCommand("""
+            SELECT NOT EXISTS (SELECT 1 FROM "Orders" WHERE "Id" < 1000)
+                AND (SELECT "StockQuantity" FROM "ProductVariantSizes" WHERE "ProductVariantId" = 7 AND "Size" = 42) = 3
+            """, connection);
+        Assert.AreEqual(true, await check.ExecuteScalarAsync());
+    }
+
+    [TestMethod]
+    public async Task GuestCheckout_LoginReturnsToTheSameCart()
+    {
+        using var client = Client();
+        var product = await client.GetStringAsync("/Catalog/Details/1");
+        Assert.AreEqual(HttpStatusCode.Redirect, (await AddToCart(client, product)).StatusCode);
+        var cart = WebUtility.HtmlDecode(await client.GetStringAsync("/Cart"));
+        StringAssert.Contains(cart, "Black / Castlerock");
+        StringAssert.Contains(cart, "Войдите, чтобы оформить заказ");
+        AssertCheckoutLogin(await client.GetAsync(CheckoutPath));
+
+        var signIn = await Login(client, returnUrl: CheckoutPath);
+        Assert.AreEqual(CheckoutPath, signIn.Headers.Location?.OriginalString);
+        var checkout = WebUtility.HtmlDecode(await client.GetStringAsync(CheckoutPath));
+        StringAssert.Contains(checkout, "Black / Castlerock");
+        StringAssert.Contains(checkout, "Размер: 42");
+        StringAssert.Contains(checkout, "2 ×");
+        _ = Confirmation(checkout);
+        await AssertNoNewOrdersAsync();
+    }
+
+    [TestMethod]
+    public async Task GuestCheckout_PostWithAntiforgeryTokenRequiresLogin()
+    {
+        using var client = Client();
+        var product = await client.GetStringAsync("/Catalog/Details/1");
+        Assert.AreEqual(HttpStatusCode.Redirect, (await AddToCart(client, product)).StatusCode);
+        var response = await Post(client, CheckoutPath, product, new()
+        {
+            ["confirmation"] = Guid.NewGuid().ToString(), ["CustomerName"] = "Гость", ["Phone"] = "+79000000000",
+            ["DeliveryMethod"] = "Самовывоз", ["PaymentMethod"] = "cash"
+        });
+        AssertCheckoutLogin(response);
+        await AssertNoNewOrdersAsync();
+    }
+
+    [TestMethod]
+    public async Task GuestCheckout_RegistrationAndLoginReturnToCheckout()
+    {
+        using var client = Client();
+        Assert.AreEqual(HttpStatusCode.Redirect, (await AddToCart(client, await client.GetStringAsync("/Catalog/Details/1"))).StatusCode);
+        var gate = await client.GetAsync(CheckoutPath);
+        AssertCheckoutLogin(gate);
+        var login = await client.GetStringAsync(gate.Headers.Location);
+        var registerPath = Regex.Match(login, "href=\"(/Account/Register\\?[^\"]+)\"").Groups[1].Value;
+        Assert.IsFalse(string.IsNullOrEmpty(registerPath));
+        var register = await client.GetStringAsync(WebUtility.HtmlDecode(registerPath));
+        var created = await Post(client, "/Account/Register", register, new()
+        {
+            ["ReturnUrl"] = CheckoutPath, ["FirstName"] = "Новый покупатель", ["Email"] = "new@example.com",
+            ["Password"] = Password, ["ConfirmPassword"] = Password, ["AcceptTerms"] = "true"
+        });
+        AssertCheckoutLogin(created);
+        var signIn = await Login(client, "new@example.com", CheckoutPath);
+        Assert.AreEqual(CheckoutPath, signIn.Headers.Location?.OriginalString);
+        StringAssert.Contains(WebUtility.HtmlDecode(await client.GetStringAsync(CheckoutPath)), "Black / Castlerock");
+    }
+
+    [TestMethod]
+    public async Task GuestCheckout_OldConfirmationCannotBeSubmittedAfterSwitchingAccounts()
+    {
+        using var client = Client();
+        Assert.AreEqual(HttpStatusCode.Redirect, (await AddToCart(client, await client.GetStringAsync("/Catalog/Details/1"))).StatusCode);
+        await Login(client);
+        var first = await client.GetStringAsync(CheckoutPath);
+        var original = Confirmation(first);
+        Assert.AreEqual(HttpStatusCode.Redirect, (await Post(client, "/Account/Logout", first, new())).StatusCode);
+
+        await Login(client, "other@example.com", CheckoutPath);
+        var second = await client.GetStringAsync(CheckoutPath);
+        Assert.AreNotEqual(original, Confirmation(second));
+        var response = await Post(client, CheckoutPath, second, new()
+        {
+            ["confirmation"] = original, ["CustomerName"] = "Другой покупатель", ["Phone"] = "+79000000001",
+            ["DeliveryMethod"] = "Самовывоз", ["PaymentMethod"] = "cash"
+        });
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()), "Корзина изменилась");
+        await AssertNoNewOrdersAsync();
+    }
+
+    [TestMethod]
+    public async Task GuestCheckout_AccountDisappearingDuringSaveRequiresLoginAndRollsBack()
+    {
+        using var client = Client();
+        await Login(client);
+        Assert.AreEqual(HttpStatusCode.Redirect, (await AddToCart(client, await client.GetStringAsync("/Catalog/Details/1"))).StatusCode);
+        var checkout = await client.GetStringAsync(CheckoutPath);
+
+        await using var simulateDeletion = new NpgsqlCommand("""
+            ALTER TABLE "Orders" ADD CONSTRAINT "FK_Orders_AspNetUsers_UserId"
+                FOREIGN KEY ("UserId") REFERENCES "AspNetUsers" ("Id") ON DELETE SET NULL;
+            CREATE FUNCTION pg_temp.delete_checkout_user() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN
+                DELETE FROM pg_temp."AspNetUsers" WHERE "Id" = NEW."UserId";
+                RETURN NEW;
+            END;
+            $$;
+            CREATE TRIGGER test_delete_checkout_user BEFORE INSERT ON "Orders"
+                FOR EACH ROW EXECUTE FUNCTION pg_temp.delete_checkout_user();
+            """, connection);
+        await simulateDeletion.ExecuteNonQueryAsync();
+
+        var response = await Post(client, CheckoutPath, checkout, new()
+        {
+            ["confirmation"] = Confirmation(checkout), ["CustomerName"] = "Покупатель", ["Phone"] = "+79000000001",
+            ["DeliveryMethod"] = "Самовывоз", ["PaymentMethod"] = "cash"
+        });
+        AssertCheckoutLogin(response);
+        Assert.AreEqual(HttpStatusCode.OK, (await client.GetAsync(response.Headers.Location)).StatusCode);
+        StringAssert.Contains(await client.GetStringAsync("/Cart"), "data-cart-line-quantity>2</span>");
+        await AssertNoNewOrdersAsync();
+    }
+
+    [TestMethod]
+    public async Task GuestCheckout_DeletedAccountReturnsToLoginAndKeepsCart()
+    {
+        using var client = Client();
+        Assert.AreEqual(HttpStatusCode.Redirect, (await AddToCart(client, await client.GetStringAsync("/Catalog/Details/1"))).StatusCode);
+        await Login(client);
+        await using var delete = new NpgsqlCommand("""DELETE FROM "AspNetUsers" WHERE "Id" = 'account-a'""", connection);
+        await delete.ExecuteNonQueryAsync();
+
+        var response = await client.GetAsync(CheckoutPath);
+        AssertCheckoutLogin(response);
+        var login = await client.GetAsync(response.Headers.Location);
+        Assert.AreEqual(HttpStatusCode.OK, login.StatusCode);
+        var signIn = await Login(client, "other@example.com", CheckoutPath);
+        Assert.AreEqual(CheckoutPath, signIn.Headers.Location?.OriginalString);
+        StringAssert.Contains(WebUtility.HtmlDecode(await client.GetStringAsync(CheckoutPath)), "Black / Castlerock");
+        await AssertNoNewOrdersAsync();
+    }
+
+
     [TestMethod]
     public async Task Account_RequiresLoginAndOnlyShowsOwnedOrders()
     {

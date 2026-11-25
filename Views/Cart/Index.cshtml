@@ -69,6 +69,10 @@
           <div class="cart-order-card__total"><dt>Итого</dt><dd data-cart-total>@total.ToString("N0") ₽</dd></div>
         </dl>
         <a class="button cart-order-card__checkout" asp-action="Checkout">Оформить заказ</a>
+        @if (User.Identity?.IsAuthenticated != true)
+        {
+          <p class="cart-order-card__login-note">Войдите, чтобы оформить заказ. Корзина сохранится.</p>
+        }
         <a class="cart-order-card__continue" asp-controller="Home" asp-action="Index" asp-fragment="catalog">Продолжить покупки</a>
       </aside>
     </div>

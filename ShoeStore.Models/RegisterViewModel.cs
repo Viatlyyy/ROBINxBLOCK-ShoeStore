@@ -5,6 +5,8 @@ namespace ShoeStore.Models;
 
 public class RegisterViewModel
 {
+    public string? ReturnUrl { get; set; }
+
     [Required(ErrorMessage = "Введите имя."),
      StringLength(50, ErrorMessage = "Имя не должно быть длиннее 50 символов.")]
     public string FirstName { get; set; } = "";

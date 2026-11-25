@@ -1,4 +1,7 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -50,36 +53,43 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
         return Json(new { lineCount = lines.Count, quantity = line?.Quantity ?? 0, lineTotal = line?.Total ?? 0, total = lines.Sum(x => x.Total), count = lines.Sum(x => x.Quantity) });
     }
 
-    [HttpGet]
+    [HttpGet, Authorize]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Checkout(CancellationToken cancellationToken)
     {
-        var lines = await cart.GetLinesAsync(cancellationToken);
-        if (!lines.Any()) return RedirectToAction(nameof(Index));
-        ViewData["Confirmation"] = cart.GetCheckoutId(lines);
-        var model = new CheckoutViewModel { Lines = lines };
-        if (User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId)
-        {
-            var contacts = await db.Users.AsNoTracking().Where(user => user.Id == userId)
-                .Select(user => new
-                {
-                    user.Email,
-                    user.PhoneNumber,
-                    Name = db.UserClaims.Where(claim => claim.UserId == user.Id && claim.ClaimType == ClaimTypes.GivenName)
-                        .OrderBy(claim => claim.Id).Select(claim => claim.ClaimValue).FirstOrDefault()
-                }).FirstOrDefaultAsync(cancellationToken);
-            if (contacts is not null)
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return await RequireCheckoutLoginAsync();
+
+        var contacts = await db.Users.AsNoTracking().Where(user => user.Id == userId)
+            .Select(user => new
             {
-                model.CustomerName = contacts.Name ?? "";
-                model.Email = contacts.Email;
-                model.Phone = contacts.PhoneNumber ?? "";
-            }
-        }
-        return View(model);
+                user.Email,
+                user.PhoneNumber,
+                Name = db.UserClaims.Where(claim => claim.UserId == user.Id && claim.ClaimType == ClaimTypes.GivenName)
+                    .OrderBy(claim => claim.Id).Select(claim => claim.ClaimValue).FirstOrDefault()
+            }).FirstOrDefaultAsync(cancellationToken);
+        if (contacts is null) return await RequireCheckoutLoginAsync();
+
+        var lines = await cart.GetLinesAsync(cancellationToken);
+        if (lines.Count == 0) return RedirectToAction(nameof(Index));
+        ViewData["Confirmation"] = cart.GetCheckoutId(lines, userId);
+        return View(new CheckoutViewModel
+        {
+            Lines = lines,
+            CustomerName = contacts.Name ?? "",
+            Email = contacts.Email,
+            Phone = contacts.PhoneNumber ?? ""
+        });
     }
 
-    [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("checkout")]
+    [HttpPost, Authorize, ValidateAntiForgeryToken, EnableRateLimiting("checkout")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Checkout([Bind("CustomerName,LastName,Email,Phone,DeliveryMethod,City,Street,House,Apartment,Postcode,Comment,PaymentMethod")] CheckoutViewModel vm, Guid confirmation, CancellationToken cancellationToken)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId) || !await db.Users.AnyAsync(user => user.Id == userId, cancellationToken))
+            return await RequireCheckoutLoginAsync();
+
         var lines = await cart.GetLinesAsync(cancellationToken);
         vm.Lines = lines;
         if (lines.Count == 0)
@@ -87,16 +97,17 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
             TempData["Message"] = "Корзина пуста. Проверьте доступность товаров перед оформлением.";
             return RedirectToAction(nameof(Index));
         }
-        var current = cart.GetCheckoutId(lines);
+        var current = cart.GetCheckoutId(lines, userId);
         ViewData["Confirmation"] = current;
         if (confirmation != current)
             ModelState.AddModelError("", "Корзина изменилась. Проверьте состав и сумму перед подтверждением.");
         if (!ModelState.IsValid) return View(vm);
-        var result = await checkout.PlaceOrderAsync(vm, lines, User.FindFirstValue(ClaimTypes.NameIdentifier), confirmation, cancellationToken);
+        var result = await checkout.PlaceOrderAsync(vm, lines, userId, confirmation, cancellationToken);
+        if (result.RequiresSignIn) return await RequireCheckoutLoginAsync();
         if (!result.Success)
         {
             vm.Lines = await cart.GetLinesAsync(cancellationToken);
-            ViewData["Confirmation"] = cart.GetCheckoutId(vm.Lines);
+            ViewData["Confirmation"] = cart.GetCheckoutId(vm.Lines, userId);
             ModelState.AddModelError("", result.Error!);
             return View(vm);
         }
@@ -113,6 +124,12 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
             .FirstOrDefaultAsync(cancellationToken);
         return order is null ? NotFound() : View(order);
     }
+    private async Task<IActionResult> RequireCheckoutLoginAsync()
+    {
+        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        return Challenge();
+    }
+
     private bool IsAjax() => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
     private IActionResult AddFailure(string message)

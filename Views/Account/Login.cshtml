@@ -4,6 +4,10 @@
 <section class="account-page">
   <p class="account-breadcrumb"><a asp-controller="Home" asp-action="Index">Главная</a><span>/</span> Авторизация</p>
   <h1>Вход в аккаунт</h1>
+  @if (TempData["RegistrationMessage"] is string registrationMessage)
+  {
+    <p class="account-success" role="status">@registrationMessage</p>
+  }
   <div class="account-layout">
     @* novalidate отключает подсказки браузера: показываем русские ошибки из ModelState через validation-summary. *@
     <form method="post" class="account-form-card" data-account-form novalidate>
@@ -16,7 +20,7 @@
       @* Флажок пока не связан с моделью: в контроллере вход всегда выполняется без постоянной cookie. *@
       <div class="account-form-card__subline"><label class="account-check"><input type="checkbox" name="remember" /><span></span>Запомнить меня</label></div>
       <button class="button account-submit" type="submit">Войти</button>
-      <a class="account-secondary" asp-action="Register">Создать аккаунт</a>
+      <a class="account-secondary" asp-action="Register" asp-route-returnUrl="@Model?.ReturnUrl">Создать аккаунт</a>
     </form>
 
     <aside class="account-benefit-card account-benefit-card--login" data-account-card>

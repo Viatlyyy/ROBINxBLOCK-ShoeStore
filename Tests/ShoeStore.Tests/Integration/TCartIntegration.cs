@@ -35,6 +35,7 @@ public class TCartIntegration
         {
             Pooling = false, SearchPath = "pg_temp"
         };
+        Assert.AreEqual("shoestore2", settings.Database, "Настройте проверочное подключение к shoestore2.");
         connection = new NpgsqlConnection(settings.ConnectionString);
         await connection.OpenAsync();
         await using var seed = new NpgsqlCommand("""
@@ -104,9 +105,40 @@ public class TCartIntegration
             ["quantity"] = quantity.ToString(), ["change"] = change.ToString()
         }));
 
+    private const string CheckoutUserId = "cart-test-customer";
+
+    private async Task SignInForCheckoutAsync()
+    {
+        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims", "Favorites" })
+        {
+            await using var copy = new NpgsqlCommand($"""CREATE TEMP TABLE "{table}" (LIKE public."{table}" INCLUDING ALL)""", connection);
+            await copy.ExecuteNonQueryAsync();
+        }
+        const string email = "cart-customer@example.com";
+        const string password = "CheckoutTest1!";
+        using (var scope = app.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            Assert.IsTrue((await users.CreateAsync(
+                new ApplicationUser { Id = CheckoutUserId, UserName = email, Email = email }, password)).Succeeded);
+        }
+
+        var login = await client.GetStringAsync("/Account/Login");
+        using var fields = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Email"] = email, ["Password"] = password,
+            ["__RequestVerificationToken"] = Regex.Match(login, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value
+        });
+        Assert.AreEqual(HttpStatusCode.Redirect, (await client.PostAsync("/Account/Login", fields)).StatusCode);
+        var product = await client.GetStringAsync("/Catalog/Details/1");
+        token = Regex.Match(product, "name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"").Groups[1].Value;
+        Assert.IsFalse(string.IsNullOrEmpty(token));
+    }
+
     [TestMethod]
     public async Task Checkout_OffersPaymentOnReceiptWithoutCollectingCardDetails()
     {
+        await SignInForCheckoutAsync();
         (await Post("Add", 37)).EnsureSuccessStatusCode();
         var html = WebUtility.HtmlDecode(await client.GetStringAsync("/Cart/Checkout"));
         StringAssert.Contains(html, "Оплата при получении");
@@ -129,6 +161,7 @@ public class TCartIntegration
     [TestMethod]
     public async Task Checkout_RequiresItemsAndConfirmationWithCurrentQuantity()
     {
+        await SignInForCheckoutAsync();
         Assert.AreEqual(HttpStatusCode.Redirect, (await client.GetAsync("/Cart/Checkout")).StatusCode);
         (await Post("Add", 37)).EnsureSuccessStatusCode();
         var html = await client.GetStringAsync("/Cart/Checkout");
@@ -150,6 +183,7 @@ public class TCartIntegration
     [TestMethod]
     public async Task Checkout_SavesOrderOnceClearsCartAndUpdatesStock()
     {
+        await SignInForCheckoutAsync();
         (await Post("Add", 37, 3)).EnsureSuccessStatusCode();
         var html = await client.GetStringAsync("/Cart/Checkout");
         var confirmation = Regex.Match(html, "name=\"confirmation\" value=\"([^\"]+)\"").Groups[1].Value;
@@ -191,6 +225,7 @@ public class TCartIntegration
     [TestMethod]
     public async Task Checkout_RollsBackAllSizesWhenLastPairIsUnavailable()
     {
+        await SignInForCheckoutAsync();
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product).ThenInclude(p => p.Brand).SingleAsync(v => v.Id == 7);
@@ -198,8 +233,9 @@ public class TCartIntegration
         var result = await service.PlaceOrderAsync(new CheckoutViewModel(), [
             new CartLine { Variant = variant, Size = 37, Quantity = 1 },
             new CartLine { Variant = variant, Size = 50, Quantity = 1 }
-        ], null, Guid.NewGuid(), CancellationToken.None);
+        ], CheckoutUserId, Guid.NewGuid(), CancellationToken.None);
         Assert.IsFalse(result.Success);
+        StringAssert.Contains(result.Error, "размер 50");
         Assert.AreEqual(3, await db.ProductVariantSizes.Where(s => s.ProductVariantId == 7 && s.Size == 37).Select(s => s.StockQuantity).SingleAsync());
         Assert.AreEqual(0, await db.Orders.CountAsync());
     }
@@ -241,6 +277,7 @@ public class TCartIntegration
     [TestMethod]
     public async Task ProductColors_CheckoutKeepsVariantsSeparateAndRefreshesSelectedStock()
     {
+        await SignInForCheckoutAsync();
         (await Post("Add", 37)).EnsureSuccessStatusCode();
         Assert.AreEqual(HttpStatusCode.BadRequest, (await Post("Add", 38, variantId: 8)).StatusCode);
         (await Post("Add", 37, variantId: 8)).EnsureSuccessStatusCode();

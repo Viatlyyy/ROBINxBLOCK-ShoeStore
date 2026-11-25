@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Npgsql;
 using ShoeStore.Data;
 using ShoeStore.Models;
 
@@ -12,10 +13,11 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
     public async Task<CheckoutResult> PlaceOrderAsync(
         CheckoutViewModel model,
         IReadOnlyCollection<CartLine> lines,
-        string? userId,
+        string userId,
         Guid confirmation,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(userId)) return CheckoutResult.SignInRequired();
         if (lines.Count == 0) return CheckoutResult.Failed("Корзина пуста.");
         if (!DeliveryMethods.Contains(model.DeliveryMethod)) return CheckoutResult.Failed("Выберите доступный способ доставки.");
         if (model.PaymentMethod != "cash") return CheckoutResult.Failed("Выберите доступный способ оплаты.");
@@ -25,8 +27,11 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
         {
             db.ChangeTracker.Clear();
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            if (await db.Orders.AnyAsync(order => order.PublicId == confirmation, cancellationToken))
-                return CheckoutResult.Succeeded(confirmation);
+            var existing = await db.Orders.Where(order => order.PublicId == confirmation)
+                .Select(order => new { order.UserId }).SingleOrDefaultAsync(cancellationToken);
+            if (existing is not null)
+                return existing.UserId == userId ? CheckoutResult.Succeeded(confirmation)
+                    : CheckoutResult.Failed("Подтверждение заказа устарело. Откройте оформление заново.");
             var remaining = new Dictionary<(int Product, int Variant, int Size), int>();
             foreach (var line in lines.OrderBy(line => line.Variant.Id).ThenBy(line => line.Size))
             {
@@ -81,7 +86,18 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
                 }).ToList()
             };
             db.Orders.Add(order);
-            await db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await db.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException error) when (error.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.ForeignKeyViolation, ConstraintName: "FK_Orders_AspNetUsers_UserId"
+            })
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return CheckoutResult.SignInRequired();
+            }
             await transaction.CommitAsync(cancellationToken);
             CatalogQueryService.UpdateStock(cache, remaining);
             return CheckoutResult.Succeeded(order.PublicId);
@@ -91,8 +107,9 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
-public sealed record CheckoutResult(bool Success, Guid? PublicId, string? Error)
+public sealed record CheckoutResult(bool Success, Guid? PublicId, string? Error, bool RequiresSignIn = false)
 {
     public static CheckoutResult Succeeded(Guid publicId) => new(true, publicId, null);
     public static CheckoutResult Failed(string error) => new(false, null, error);
+    public static CheckoutResult SignInRequired() => new(false, null, "Войдите, чтобы оформить заказ.", RequiresSignIn: true);
 }

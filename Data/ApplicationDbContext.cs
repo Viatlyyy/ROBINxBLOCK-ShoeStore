@@ -14,6 +14,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProductVariantImage> ProductVariantImages => Set<ProductVariantImage>();
     public DbSet<ProductVariantSize> ProductVariantSizes => Set<ProductVariantSize>();
 
+    public DbSet<Favorite> Favorites => Set<Favorite>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
@@ -40,6 +41,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             table.HasCheckConstraint("CK_Products_Price_Positive", "\"Price\" > 0");
             table.HasCheckConstraint("CK_Products_OldPrice", "\"OldPrice\" IS NULL OR \"OldPrice\" > \"Price\"");
         });
+        b.Entity<Favorite>().Property(x => x.UserId).HasMaxLength(450);
+        b.Entity<Favorite>().Property(x => x.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+        b.Entity<Favorite>().HasIndex(x => new { x.UserId, x.ProductId }).IsUnique();
+        b.Entity<Favorite>().HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId);
         b.Entity<Order>().Property(x => x.Total).HasPrecision(10, 2);
         b.Entity<Order>().Property(x => x.PublicId).HasDefaultValueSql("gen_random_uuid()");
         b.Entity<Order>().Property(x => x.PaymentMethod).HasDefaultValue("cash");

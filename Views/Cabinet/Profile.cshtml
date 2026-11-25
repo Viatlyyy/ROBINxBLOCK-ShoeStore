@@ -1,0 +1,26 @@
+@model ShoeStore.Models.CustomerProfileViewModel
+@{
+  Layout = "_CabinetLayout";
+  ViewData["Title"] = "Профиль";
+}
+<h2>Контактные данные</h2>
+<form class="customer-profile" asp-action="Profile" method="post" data-customer-profile>
+  @if (TempData["ProfileSaved"] is string message)
+  {
+    <p class="customer-profile__notice" role="status">@message</p>
+  }
+  <div asp-validation-summary="ModelOnly" class="customer-profile__error" role="alert"></div>
+  <label asp-for="DisplayName">Имя и фамилия</label>
+  <input asp-for="DisplayName" maxlength="80" autocomplete="name" required />
+  <span asp-validation-for="DisplayName" class="customer-profile__error"></span>
+
+  <label for="profile-email">Почта</label>
+  <input id="profile-email" value="@Model.Email" type="email" readonly autocomplete="email" />
+
+  <label asp-for="Phone">Телефон</label>
+  <input asp-for="Phone" type="tel" maxlength="32" autocomplete="tel" />
+  <span asp-validation-for="Phone" class="customer-profile__error"></span>
+
+  <button type="submit" class="account-action account-action--primary">Сохранить изменения</button>
+  <p class="sr-only" role="status" data-profile-progress></p>
+</form>

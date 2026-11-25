@@ -12,7 +12,10 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
     public IActionResult AccessDenied() => View();
 
     // Авторизованному пользователю форму входа повторно не показываем.
-    public IActionResult Login() => User.Identity?.IsAuthenticated == true ? RedirectToAction("Index", "Home") : View();
+    [HttpGet]
+    public IActionResult Login(string? returnUrl = null) => User.Identity?.IsAuthenticated == true
+        ? AfterLogin(returnUrl)
+        : View(new LoginViewModel { ReturnUrl = returnUrl });
 
     [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("authentication")]
     public async Task<IActionResult> Login(LoginViewModel vm)
@@ -31,9 +34,9 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
         // false — без постоянной cookie, true — неверный пароль учитывается для блокировки.
         // Проверку хеша оставляем Identity, вручную пароль с данными из базы не сравниваем.
         var result = await signIn.PasswordSignInAsync(user, vm.Password, false, true);
-        // После успешного входа открываем главную страницу.
+        // После успешного входа возвращаем покупателя на запрошенную страницу сайта.
         if (result.Succeeded)
-            return RedirectToAction("Index", "Home");
+            return AfterLogin(vm.ReturnUrl);
 
         // При неудачном входе показываем причину ошибки в форме.
         ModelState.AddModelError("", result.IsLockedOut
@@ -41,6 +44,11 @@ public class AccountController(UserManager<ApplicationUser> users, SignInManager
             : "Неверный пароль.");
         return View(vm);
     }
+
+    private IActionResult AfterLogin(string? returnUrl) =>
+        !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
+            ? LocalRedirect(returnUrl)
+            : RedirectToAction("Index", "Home");
 
     // Показываем форму регистрации.
     public IActionResult Register() => View();

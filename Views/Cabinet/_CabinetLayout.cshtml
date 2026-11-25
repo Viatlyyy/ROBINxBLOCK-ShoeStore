@@ -1,0 +1,28 @@
+@{
+  Layout = "_Layout";
+  ViewData["Title"] ??= "Личный кабинет";
+  var section = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+  if (section == "Order") section = "Orders";
+  var links = new[] { ("Index", "Обзор"), ("Profile", "Профиль"), ("Orders", "Заказы"), ("Favorites", "Избранное") };
+}
+
+<section class="customer-account">
+  <h1 class="customer-account__title">Личный кабинет</h1>
+  <div class="customer-account__layout">
+    <aside class="customer-account__sidebar">
+      <nav class="customer-account__nav" aria-label="Разделы личного кабинета">
+        @foreach (var (action, label) in links)
+        {
+          <a asp-controller="Cabinet" asp-action="@action" class="customer-account__nav-link"
+             aria-current="@(section == action ? "page" : null)">@label</a>
+        }
+      </nav>
+      <form asp-controller="Account" asp-action="Logout" method="post" class="customer-account__logout">
+        <button type="submit">Выйти</button>
+      </form>
+    </aside>
+    <div id="account-content" class="customer-account__content">
+      @RenderBody()
+    </div>
+  </div>
+</section>

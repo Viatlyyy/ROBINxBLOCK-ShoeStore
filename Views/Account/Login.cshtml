@@ -7,6 +7,7 @@
   <div class="account-layout">
     @* novalidate отключает подсказки браузера: показываем русские ошибки из ModelState через validation-summary. *@
     <form method="post" class="account-form-card" data-account-form novalidate>
+      <input asp-for="ReturnUrl" type="hidden" />
       <h2>Добро пожаловать</h2>
       <p class="account-form-card__intro">Войдите, чтобы продолжить покупки в RONINxBLOCK</p>
       <div asp-validation-summary="All" class="account-validation"></div>

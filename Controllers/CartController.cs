@@ -56,7 +56,25 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
         var lines = await cart.GetLinesAsync(cancellationToken);
         if (!lines.Any()) return RedirectToAction(nameof(Index));
         ViewData["Confirmation"] = cart.GetCheckoutId(lines);
-        return View(new CheckoutViewModel { Lines = lines });
+        var model = new CheckoutViewModel { Lines = lines };
+        if (User.FindFirstValue(ClaimTypes.NameIdentifier) is { } userId)
+        {
+            var contacts = await db.Users.AsNoTracking().Where(user => user.Id == userId)
+                .Select(user => new
+                {
+                    user.Email,
+                    user.PhoneNumber,
+                    Name = db.UserClaims.Where(claim => claim.UserId == user.Id && claim.ClaimType == ClaimTypes.GivenName)
+                        .OrderBy(claim => claim.Id).Select(claim => claim.ClaimValue).FirstOrDefault()
+                }).FirstOrDefaultAsync(cancellationToken);
+            if (contacts is not null)
+            {
+                model.CustomerName = contacts.Name ?? "";
+                model.Email = contacts.Email;
+                model.Phone = contacts.PhoneNumber ?? "";
+            }
+        }
+        return View(model);
     }
 
     [HttpPost, ValidateAntiForgeryToken, EnableRateLimiting("checkout")]

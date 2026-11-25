@@ -52,7 +52,10 @@
 
   <div>
     <p class="eyebrow">@Model.BrandName</p>
-    <h1>@Model.Name</h1>
+    <div class="detail-title">
+      <h1>@Model.Name</h1>
+      <partial name="_FavoriteButton" model="Model.Id" />
+    </div>
     @if (Model.Variants.Count > 0)
     {
       <p class="color detail-color">Цвет: <b data-variant-label>@selected.Name</b></p>

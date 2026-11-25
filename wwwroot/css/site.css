@@ -11,3 +11,14 @@ html{scroll-behavior:smooth}.button,.light-button,.header a{transition:opacity .
 .hero-slide .hero-model{top:38px;right:auto;bottom:auto;left:42px;min-width:180px;padding:11px 14px;border-left:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.2)}@media(max-width:760px){.hero-slide .hero-model{top:20px;left:20px;min-width:150px}}
 
 .hero-dots .hero-dot { display: block; cursor: default; pointer-events: none; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,0 +1,50 @@
+@model ShoeStore.Models.AccountOrderDetails
+@using System.Globalization
+@{
+  Layout = "_CabinetLayout";
+  ViewData["Title"] = $"Заказ №{Model.Order.Number}";
+  var culture = CultureInfo.GetCultureInfo("ru-RU");
+}
+<a class="account-text-link account-order-back" asp-action="Orders">← Все заказы</a>
+<h2>Заказ №@Model.Order.Number</h2>
+<p class="account-order-meta">
+  <time datetime="@Model.Order.CreatedAt.ToString("O")">@Model.Order.CreatedAt.ToLocalTime().ToString("d MMMM yyyy", culture)</time>
+  <span>@Model.Order.Status</span>
+</p>
+<section class="account-order-items" aria-labelledby="order-items-title">
+  <h3 id="order-items-title">Состав заказа</h3>
+  <ul>
+    @foreach (var line in Model.Lines)
+    {
+      <li>
+        <partial name="_OrderImage" model="line.ImageUrl" />
+        <div class="account-order-items__product">
+          <strong>@line.Name</strong>
+          <span>@line.VariantName</span>
+          <span>Размер @line.Size</span>
+          <span>Количество: @line.Quantity</span>
+          @if (line.Quantity > 1)
+          {
+            <span>За пару: @line.Price.ToString("N0", culture) ₽</span>
+          }
+        </div>
+        <strong class="account-order-items__price">@((line.Price * line.Quantity).ToString("N0", culture)) ₽</strong>
+      </li>
+    }
+  </ul>
+</section>
+<div class="account-order-summary">
+  <dl>
+    <dt>Получение</dt>
+    <dd>
+      @Model.DeliveryMethod
+      @if (Model.DeliveryMethod != "Самовывоз" && !string.IsNullOrWhiteSpace(Model.Address)) { <span>@Model.Address</span> }
+    </dd>
+    <dt>Оплата</dt>
+    <dd>@(Model.PaymentMethod switch { "cash" => "При получении", "card" => "Банковская карта", "apple" => "Apple Pay", "google" => "Google Pay", _ => Model.PaymentMethod })</dd>
+  </dl>
+  <div class="account-panel account-order-summary__total">
+    <h3>Итого</h3>
+    <strong>@Model.Order.Total.ToString("N0", culture) ₽</strong>
+  </div>
+</div>

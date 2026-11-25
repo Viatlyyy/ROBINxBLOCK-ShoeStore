@@ -38,6 +38,7 @@
   }
   <strong>@Model.Price.ToString("N0") ₽</strong>
   </a>
+  <partial name="_FavoriteButton" model="Model.Id" />
   @if (Model.Variants.Count > 1)
   {
     <div class="variant-picker" role="group" aria-label="Расцветки @Model.BrandName @Model.Name">

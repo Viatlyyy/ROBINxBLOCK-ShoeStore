@@ -1,0 +1,63 @@
+@model ShoeStore.Models.AccountOverviewViewModel
+@using System.Globalization
+@{
+  Layout = "_CabinetLayout";
+  var culture = CultureInfo.GetCultureInfo("ru-RU");
+}
+
+<div class="customer-overview">
+  <section class="account-panel">
+    <h2>Профиль</h2>
+    <div class="account-panel__contact">
+      <strong>@(string.IsNullOrWhiteSpace(Model.Profile.DisplayName) ? "Покупатель" : Model.Profile.DisplayName)</strong>
+      @if (!string.IsNullOrWhiteSpace(Model.Profile.Email)) { <span>@Model.Profile.Email</span> }
+      @if (!string.IsNullOrWhiteSpace(Model.Profile.Phone)) { <span>@Model.Profile.Phone</span> }
+    </div>
+    <a class="account-action" asp-action="Profile">Изменить</a>
+  </section>
+  <section class="account-panel">
+    <h2>Последний заказ</h2>
+    @if (Model.LatestOrder is { } order)
+    {
+      <div class="account-latest">
+        <partial name="_OrderImage" model="order.ImageUrl" />
+        <div>
+          <strong>Заказ №@order.Number</strong>
+          <time datetime="@order.CreatedAt.ToString("O")">@order.CreatedAt.ToLocalTime().ToString("d MMMM yyyy", culture)</time>
+          <span class="account-muted">@order.Status</span>
+          <strong>@order.Total.ToString("N0", culture) ₽</strong>
+          <a class="account-action" asp-action="Order" asp-route-publicId="@order.PublicId">Подробнее</a>
+        </div>
+      </div>
+    }
+    else
+    {
+      <p class="account-muted">Пока нет заказов.</p>
+      <a class="account-action" asp-controller="Catalog" asp-action="Index">Перейти в каталог</a>
+    }
+  </section>
+</div>
+
+<section class="account-overview-favorites" data-account-preview>
+  <div class="account-section-header">
+    <h2>Избранное</h2>
+    @if (Model.Favorites.Count > 0)
+    {
+      <a class="account-text-link" asp-action="Favorites">Смотреть всё</a>
+    }
+  </div>
+  @if (Model.Favorites.Count == 0)
+  {
+    <p class="account-muted">Пока нет избранных товаров.</p>
+    <a class="account-text-link" asp-controller="Catalog" asp-action="Index">Перейти в каталог</a>
+  }
+  else
+  {
+    <div class="product-grid account-product-grid">
+      @foreach (var product in Model.Favorites)
+      {
+        <partial name="_ProductCard" model="product" />
+      }
+    </div>
+  }
+</section>

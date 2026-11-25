@@ -1,0 +1,31 @@
+@model int
+@inject ShoeStore.Services.FavoritesService Favorites
+@{
+  var request = Context.Request;
+  var returnUrl = $"{request.PathBase}{request.Path}{request.QueryString}";
+  if (string.Equals(ViewContext.RouteData.Values["action"] as string, "SearchResults", StringComparison.OrdinalIgnoreCase))
+  {
+    returnUrl = $"{Url.Action("Index", "Catalog")}{request.QueryString}";
+  }
+}
+@if (User.Identity?.IsAuthenticated == true)
+{
+  var isSaved = (await Favorites.GetIdsAsync(Context.RequestAborted)).Contains(Model);
+  <form class="favorite-control" asp-controller="Cabinet" asp-action="SetFavorite" method="post" data-favorite-form
+        data-favorite-login-url="@Url.Action("Login", "Account")">
+    <input type="hidden" name="productId" value="@Model" />
+    <input type="hidden" name="isFavorite" value="@(!isSaved ? "true" : "false")" />
+    <input type="hidden" name="returnUrl" value="@returnUrl" />
+    <button class="favorite-button" type="submit" aria-label="В избранном"
+            title="@(isSaved ? "Убрать из избранного" : "Добавить в избранное")" aria-pressed="@(isSaved ? "true" : "false")">
+      <partial name="_FavoriteIcon" />
+    </button>
+  </form>
+}
+else
+{
+  <a class="favorite-control favorite-button" asp-controller="Account" asp-action="Login" asp-route-returnUrl="@returnUrl"
+     data-favorite-login aria-label="Войти, чтобы добавить в избранное" title="Войти, чтобы добавить в избранное">
+    <partial name="_FavoriteIcon" />
+  </a>
+}

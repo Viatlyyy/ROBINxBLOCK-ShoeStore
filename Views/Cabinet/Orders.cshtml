@@ -1,0 +1,42 @@
+@model ShoeStore.Models.AccountOrdersViewModel
+@using System.Globalization
+@{
+  Layout = "_CabinetLayout";
+  ViewData["Title"] = "Мои заказы";
+  var culture = CultureInfo.GetCultureInfo("ru-RU");
+}
+<h2>Мои заказы</h2>
+@if (Model.Orders.Count == 0)
+{
+  <div class="account-empty">
+    <p>Пока нет заказов.</p>
+    <a class="account-action" asp-controller="Catalog" asp-action="Index">Перейти в каталог</a>
+  </div>
+}
+else
+{
+  <ul class="account-orders">
+    @foreach (var order in Model.Orders)
+    {
+      <li class="account-orders__row">
+        <partial name="_OrderImage" model="order.ImageUrl" />
+        <div class="account-orders__metadata">
+          <strong>Заказ №@order.Number</strong>
+          <time datetime="@order.CreatedAt.ToString("O")">@order.CreatedAt.ToLocalTime().ToString("d MMMM yyyy", culture)</time>
+        </div>
+        <span class="account-muted account-orders__status">@order.Status</span>
+        <strong class="account-orders__total">@order.Total.ToString("N0", culture) ₽</strong>
+        <a class="account-action" asp-action="Order" asp-route-publicId="@order.PublicId"
+           aria-label="Подробнее о заказе №@order.Number">Подробнее</a>
+      </li>
+    }
+  </ul>
+  @if (Model.TotalPages > 1)
+  {
+    <nav class="account-pagination" aria-label="Страницы заказов">
+      @if (Model.Page > 1) { <a class="account-text-link" asp-action="Orders" asp-route-page="@(Model.Page - 1)">Назад</a> }
+      <span>Страница @Model.Page из @Model.TotalPages</span>
+      @if (Model.Page < Model.TotalPages) { <a class="account-text-link" asp-action="Orders" asp-route-page="@(Model.Page + 1)">Далее</a> }
+    </nav>
+  }
+}

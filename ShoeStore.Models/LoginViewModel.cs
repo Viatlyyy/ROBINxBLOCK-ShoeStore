@@ -5,6 +5,8 @@ namespace ShoeStore.Models;
 // Данные формы входа. Эта модель не является базовым классом формы регистрации.
 public class LoginViewModel
 {
+    public string? ReturnUrl { get; set; }
+
     [Required(ErrorMessage = "Введите адрес электронной почты."),
      EmailAddress(ErrorMessage = "Укажите корректный адрес электронной почты."),
      StringLength(254, ErrorMessage = "Адрес электронной почты не должен быть длиннее 254 символов.")]

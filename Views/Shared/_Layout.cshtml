@@ -1,6 +1,10 @@
 @{
   var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
   var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+  var isCabinet = controller.Equals("Cabinet", StringComparison.OrdinalIgnoreCase);
+  var hasProductCards = isCabinet || controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
+    || controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
+    || controller.Equals("Cart", StringComparison.OrdinalIgnoreCase);
   var isCart = controller.Equals("Cart", StringComparison.OrdinalIgnoreCase);
   var isHome = controller.Equals("Home", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
@@ -38,7 +42,7 @@
     <link rel="stylesheet" href="~/css/culture-board.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/hero-light.css" asp-append-version="true" />
   }
-  @if (isHome || isCatalog)
+  @if (isHome || isCatalog || isCabinet)
   {
     <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
   }
@@ -59,7 +63,7 @@
     <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" />
   }
-  @if (isHome || isCatalog || isCartIndex || isProductDetails)
+  @if (isHome || isCatalog || isCartIndex || isProductDetails || isCabinet)
   {
     <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" />
   }
@@ -67,9 +71,15 @@
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
+  @if (hasProductCards) { <link rel="stylesheet" href="~/css/favorites.css" asp-append-version="true" /> }
+  @if (isCabinet)
+  {
+    <link rel="stylesheet" href="~/css/customer-account.css" asp-append-version="true" />
+    <link rel="expect" href="#account-content" blocking="render" />
+  }
 </head>
-<body>
-  <script src="~/js/page-intro.js" asp-append-version="true"></script>
+<body class="@(isCabinet ? "customer-account-page" : null)">
+  @if (!isCabinet) { <script src="~/js/page-intro.js" asp-append-version="true"></script> }
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
     <nav aria-label="Основная навигация">
@@ -87,11 +97,12 @@
         // Имя пришло из claim при регистрации. Для аккаунтов без имени используем запасной вариант.
         var displayName = User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value;
         displayName = string.IsNullOrWhiteSpace(displayName) ? "Пользователь" : displayName.Trim();
-        var avatarLetter = displayName[..1].ToUpperInvariant();
+        var avatarLetter = System.Globalization.StringInfo.GetNextTextElement(displayName).ToUpperInvariant();
         <div class="account-menu" data-account-menu>
           <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>@avatarLetter</button>
           <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
             <p class="account-menu__email">@displayName</p>
+            <a asp-controller="Cabinet" asp-action="Index" role="menuitem">Личный кабинет</a>
             @* Form Tag Helper добавит токен для POST-выхода; ссылка GET сессию не завершает. *@
             <form asp-controller="Account" asp-action="Logout" method="post">
               <button type="submit" role="menuitem">Выйти</button>
@@ -105,7 +116,14 @@
       }
     </div>
   </header>
-  <main>@RenderBody()</main>
+  <main>
+    @if (TempData["FavoriteNotice"] is string favoriteNotice)
+    {
+      <p class="favorite-message" role="alert">@favoriteNotice</p>
+    }
+    @RenderBody()
+  </main>
+  @if (hasProductCards) { <p class="favorite-feedback sr-only" aria-live="polite" data-favorite-announcement></p> }
   <footer class="store-footer" id="contacts">
     <div class="store-footer__grid">
       <div><a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a></div>
@@ -114,7 +132,7 @@
         <a asp-controller="Catalog" asp-action="Index">Каталог</a>
         <a asp-controller="Catalog" asp-action="Index" asp-route-tag="new">Новинки</a>
         <a asp-controller="Catalog" asp-action="Index" asp-route-tag="popular">Хиты</a>
-        <a asp-controller="Account" asp-action="Login">Личный кабинет</a>
+        <a asp-controller="Cabinet" asp-action="Index">Личный кабинет</a>
       </nav>
       <div>
         <h2>Контакты</h2>
@@ -134,7 +152,7 @@
     <script src="~/js/feature-reveal.js" asp-append-version="true"></script>
     <script src="~/js/brand-ticker.js" asp-append-version="true"></script>
   }
-  @if (isHome || isCatalog || isCartIndex || isProductDetails)
+  @if (isHome || isCatalog || isCartIndex || isProductDetails || isCabinet)
   {
     <script src="~/js/product-colors.js" asp-append-version="true" defer></script>
   }
@@ -146,5 +164,6 @@
   }
   @if (isCartIndex) { <script src="~/js/cart-quantity.js" asp-append-version="true"></script> }
   @if (isCatalog) { <script src="~/js/catalog-search.js" asp-append-version="true" defer></script> }
+  @if (hasProductCards) { <script src="~/js/favorites.js" asp-append-version="true" defer></script> }
 </body>
 </html>

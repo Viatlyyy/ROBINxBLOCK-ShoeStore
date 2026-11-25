@@ -65,6 +65,16 @@ public sealed class CatalogQueryService(ApplicationDbContext db, IMemoryCache ca
         return cards.SingleOrDefault();
     }
 
+    public async Task<IReadOnlyList<ProductCardViewModel>> GetProductsByIdsAsync(IReadOnlyCollection<int> ids,
+        CancellationToken cancellationToken)
+    {
+        if (ids.Count == 0) return [];
+        var cards = await LoadCardsAsync(db.Products.AsNoTracking()
+            .Where(product => product.Status == ProductStatus.Active && ids.Contains(product.Id)), cancellationToken);
+        var indexed = cards.ToDictionary(card => card.Id);
+        return ids.Where(indexed.ContainsKey).Select(id => indexed[id]).ToArray();
+    }
+
     private static readonly object StockUpdateLock = new();
     private static long stockVersion;
     private static readonly object PublishedKey = (typeof(ProductCardViewModel), "published");

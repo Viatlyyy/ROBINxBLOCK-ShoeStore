@@ -51,7 +51,8 @@
       return;
     }
 
-    if (image.hidden || !image.naturalWidth) {
+    const cabinetReducedMotion = card.closest('.customer-account') && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (image.hidden || !image.naturalWidth || cabinetReducedMotion) {
       image.src = url;
       image.hidden = false;
       placeholder.hidden = true;

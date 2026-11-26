@@ -13,7 +13,6 @@
   </nav>
   <header class="purchase-heading">
     <h1 id="cart-title">Корзина</h1>
-    <p data-cart-items-label hidden="@(count == 0)">@itemsLabel в корзине</p>
   </header>
 
   <div class="purchase-notice" role="status" data-cart-notice>@TempData["Message"]</div>
@@ -32,7 +31,11 @@
   </div>
 
   <div class="purchase-columns cart-reference-layout" data-cart-content hidden="@(count == 0)">
-    <div class="cart-reference-lines">
+    <section class="cart-reference-lines" aria-labelledby="cart-items-title">
+      <header class="cart-reference-lines__heading">
+        <h2 id="cart-items-title">Ваши товары</h2>
+        <span data-cart-items-label>@itemsLabel</span>
+      </header>
       <div class="cart-reference-items" data-cart-lines>
         @foreach (var line in Model.Lines)
         {
@@ -49,7 +52,8 @@
               }
             </a>
             <div class="cart-reference-item__details">
-              <h2><a asp-controller="Catalog" asp-action="Details" asp-route-id="@line.Product.Id" asp-route-variantId="@line.Variant.Id">@name</a></h2>
+              <p class="purchase-product-brand">@line.Product.Brand.Name</p>
+              <h3><a asp-controller="Catalog" asp-action="Details" asp-route-id="@line.Product.Id" asp-route-variantId="@line.Variant.Id">@line.Product.Name</a></h3>
               <p>Цвет: @line.Variant.Name</p>
               <p class="cart-reference-item__size">Размер: @line.Size EU</p>
             </div>
@@ -61,33 +65,31 @@
               <span data-cart-line-quantity>@line.Quantity</span>
               <button type="submit" name="change" value="1" aria-label="Увеличить количество" disabled="@atLimit">+</button>
             </form>
-            <strong class="cart-reference-item__price" data-cart-line-total>@line.Total.ToString("N0") ₽</strong>
-            <form class="cart-reference-item__remove" asp-action="Remove" method="post" data-cart-remove-form>
-              <input type="hidden" name="variantId" value="@line.Variant.Id" />
-              <input type="hidden" name="size" value="@line.Size" />
-              <button type="submit" aria-label="Удалить @name, @line.Size EU">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
-                  <path d="m6 6 12 12M18 6 6 18" />
-                </svg>
-              </button>
-            </form>
+            <div class="cart-reference-item__cost">
+              <strong class="cart-reference-item__price" data-cart-line-total>@line.Total.ToString("N0") ₽</strong>
+              <form class="cart-reference-item__remove" asp-action="Remove" method="post" data-cart-remove-form>
+                <input type="hidden" name="variantId" value="@line.Variant.Id" />
+                <input type="hidden" name="size" value="@line.Size" />
+                <button type="submit" aria-label="Удалить @name, @line.Size EU">Удалить</button>
+              </form>
+            </div>
           </article>
         }
       </div>
       <a class="purchase-back" asp-controller="Catalog" asp-action="Index">
         <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"back"' /> Продолжить покупки
       </a>
-    </div>
+    </section>
 
     <aside class="purchase-summary cart-order-card" aria-labelledby="cart-summary-title">
-      <h2 id="cart-summary-title">Сводка заказа</h2>
+      <h2 id="cart-summary-title">Ваш заказ</h2>
       <dl class="purchase-totals">
-        <div><dt>Товары (<span data-cart-summary-count>@count</span>)</dt><dd data-cart-subtotal>@total.ToString("N0") ₽</dd></div>
-        <div><dt>Доставка</dt><dd>Стоимость не рассчитана</dd></div>
+        <div><dt>Подытог</dt><dd data-cart-subtotal>@total.ToString("N0") ₽</dd></div>
+        <div><dt>Доставка</dt><dd>Не рассчитана</dd></div>
         <div class="purchase-totals__total"><dt>Итого за товары</dt><dd data-cart-total>@total.ToString("N0") ₽</dd></div>
       </dl>
       <a class="button purchase-button cart-order-card__checkout" asp-action="Checkout" data-cart-checkout>
-        Оформить заказ <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
+        Перейти к оформлению <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
       </a>
       @if (User.Identity?.IsAuthenticated != true)
       {

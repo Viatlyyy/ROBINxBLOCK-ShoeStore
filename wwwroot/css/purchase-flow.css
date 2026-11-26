@@ -33,6 +33,15 @@
 
 .purchase-flow [hidden] { display: none !important; }
 
+main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer {
+  padding-block: clamp(30px, 2.8vw, 38px) 18px;
+}
+
+main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer .store-footer__bottom {
+  margin-top: 28px;
+  padding-top: 16px;
+}
+
 .purchase-breadcrumb {
   display: flex;
   flex-wrap: wrap;
@@ -102,6 +111,29 @@
   letter-spacing: -.05em;
   overflow-wrap: anywhere;
 }
+
+:is(.cart-page, .checkout-page) .purchase-breadcrumb { font-size: .875rem; }
+:is(.cart-page, .checkout-page) .purchase-totals { gap: 13px; }
+:is(.cart-page, .checkout-page) .purchase-totals dt,
+:is(.cart-page, .checkout-page) .purchase-totals dd { font-size: 1.0625rem; }
+:is(.cart-page, .checkout-page) .purchase-totals dd { font-weight: 700; }
+:is(.cart-page, .checkout-page) .purchase-totals > div:nth-child(2) dd { font-size: .9375rem; font-weight: 550; }
+
+:is(.cart-page, .checkout-page) .purchase-totals .purchase-totals__total {
+  margin-top: 8px;
+  padding-top: 15px;
+}
+
+:is(.cart-page, .checkout-page) .purchase-totals__total dt {
+  font-size: clamp(1.1875rem, 1.6vw, 1.5rem);
+}
+
+:is(.cart-page, .checkout-page) .purchase-totals__total dd {
+  font-size: clamp(1.625rem, 2vw, 2rem);
+}
+
+.cart-order-card h2 { font-size: clamp(1.5rem, 1.75vw, 1.875rem); margin-bottom: 22px; }
+.purchase-product-brand { text-transform: uppercase; }
 
 .purchase-flow .purchase-button {
   position: relative;

@@ -4,7 +4,6 @@
   const contents = cart.querySelector('[data-cart-content]');
   const empty = cart.querySelector('[data-cart-empty]');
   const label = cart.querySelector('[data-cart-items-label]');
-  const summaryCount = cart.querySelector('[data-cart-summary-count]');
   const subtotal = cart.querySelector('[data-cart-subtotal]');
   const total = cart.querySelector('[data-cart-total]');
   const checkout = cart.querySelector('[data-cart-checkout]');
@@ -16,7 +15,9 @@
   const easing = getComputedStyle(cart).getPropertyValue('--purchase-ease').trim();
   const currency = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
   const money = value => currency.format(value) + ' ₽';
-  let pending = false;
+  const queue = [];
+  let processing = false;
+  let needsRefresh = false;
 
   function animate(element, frames, duration) {
     if (!reducedMotion.matches && element.animate) {
@@ -37,7 +38,7 @@
     minus.disabled = state.quantity <= 1;
     plus.disabled = state.quantity >= state.maximumQuantity;
     if ((active === minus || active === plus) && active.disabled) {
-      (active === plus && !minus.disabled ? minus : !plus.disabled ? plus : row.querySelector('h2 a'))
+      (active === plus && !minus.disabled ? minus : !plus.disabled ? plus : row.querySelector('h3 a'))
         .focus({ preventScroll: true });
     }
 
@@ -46,10 +47,10 @@
   }
 
   async function removeRows(rows, removed, source) {
-    const focusWasRemoved = removed.some(row => row.contains(document.activeElement));
     await Promise.all(removed.map(row => animate(row, [{ opacity: 1 }, { opacity: 0, transform: 'translateX(-6px)' }], 135)));
     const remaining = rows.filter(row => !removed.includes(row));
     const positions = remaining.map(row => row.getBoundingClientRect().top);
+    const focusWasRemoved = removed.some(row => row.contains(document.activeElement));
     removed.forEach(row => row.remove());
     remaining.forEach((row, index) => {
       const shift = positions[index] - row.getBoundingClientRect().top;
@@ -67,6 +68,8 @@
     const currentKeys = new Set(rows.map(row => row.dataset.cartKey));
     const byKey = new Map(result.lines.map(line => [line.variantId + ':' + line.size, line]));
     if ([...byKey.keys()].some(key => !currentKeys.has(key))) {
+      needsRefresh = true;
+      queue.length = 0;
       location.reload();
       return;
     }
@@ -81,9 +84,7 @@
       if (state) updateLine(row, state);
     }
 
-    label.textContent = result.itemsLabel + ' в корзине';
-    label.hidden = !result.count;
-    updateText(summaryCount, result.count);
+    updateText(label, result.itemsLabel);
     updateText(subtotal, money(result.total));
     updateText(total, money(result.total));
     badge.textContent = result.count;
@@ -104,36 +105,53 @@
       : label.textContent + '. Сумма за товары ' + money(result.total) + '.';
   }
 
-  cart.addEventListener('submit', async event => {
-    const form = event.target.closest('[data-cart-quantity-form], [data-cart-remove-form]');
-    if (!form) return;
-    event.preventDefault();
-    if (pending || !event.submitter) return;
-
-    pending = true;
-    form.setAttribute('aria-busy', 'true');
+  async function processQueue() {
+    if (processing) return;
+    processing = true;
     checkout.setAttribute('aria-disabled', 'true');
-    error.hidden = true;
-    notice.textContent = '';
-
-    const data = new FormData(form, event.submitter);
-    const source = form.closest('[data-cart-line]');
     try {
-      const response = await fetch(form.action, {
-        method: 'POST',
-        body: data,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      if (!response.ok) throw new Error('Cart update failed');
-      await render(await response.json(), source, form.hasAttribute('data-cart-remove-form'));
+      while (queue.length) {
+        const { form, submitter, data, removing } = queue.shift();
+        if (form.isConnected && !submitter.disabled) {
+          const response = await fetch(form.action, {
+            method: 'POST',
+            body: data,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+          });
+          if (!response.ok) throw new Error('Cart update failed');
+          await render(await response.json(), form.closest('[data-cart-line]'), removing);
+        }
+        if (!queue.some(item => item.form === form)) form.removeAttribute('aria-busy');
+      }
     } catch {
+      // The server may have saved the last change even if the response was lost.
+      // Discard queued writes until the page has read the latest server state.
+      needsRefresh = true;
+      queue.length = 0;
+      cart.querySelectorAll('form[aria-busy]').forEach(form => form.removeAttribute('aria-busy'));
       error.querySelector('[data-cart-error-message]').textContent = 'Не удалось проверить изменения. Обновите корзину перед оформлением.';
       error.hidden = false;
     } finally {
-      pending = false;
-      form.removeAttribute('aria-busy');
-      if (error.hidden) checkout.removeAttribute('aria-disabled');
+      processing = false;
+      if (!needsRefresh) checkout.removeAttribute('aria-disabled');
     }
+  }
+
+  cart.addEventListener('submit', event => {
+    const form = event.target.closest('[data-cart-quantity-form], [data-cart-remove-form]');
+    if (!form || !event.submitter) return;
+    event.preventDefault();
+    if (needsRefresh) {
+      error.querySelector('a').focus();
+      return;
+    }
+
+    const removing = form.hasAttribute('data-cart-remove-form');
+    if (removing && form.hasAttribute('aria-busy')) return;
+    if (!processing) notice.textContent = '';
+    queue.push({ form, submitter: event.submitter, data: new FormData(form, event.submitter), removing });
+    form.setAttribute('aria-busy', 'true');
+    void processQueue();
   });
 
   checkout.addEventListener('click', event => {

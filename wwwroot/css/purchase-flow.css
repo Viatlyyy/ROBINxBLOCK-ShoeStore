@@ -103,6 +103,29 @@
   overflow-wrap: anywhere;
 }
 
+.cart-page .purchase-breadcrumb { font-size: .875rem; }
+.cart-page .purchase-totals { gap: 13px; }
+.cart-page .purchase-totals dt,
+.cart-page .purchase-totals dd { font-size: 1.0625rem; }
+.cart-page .purchase-totals dd { font-weight: 700; }
+.cart-page .purchase-totals > div:nth-child(2) dd { font-size: .9375rem; font-weight: 550; }
+
+.cart-page .purchase-totals .purchase-totals__total {
+  margin-top: 8px;
+  padding-top: 15px;
+}
+
+.cart-page .purchase-totals__total dt {
+  font-size: clamp(1.1875rem, 1.6vw, 1.5rem);
+}
+
+.cart-page .purchase-totals__total dd {
+  font-size: clamp(1.625rem, 2vw, 2rem);
+}
+
+.cart-order-card h2 { font-size: clamp(1.5rem, 1.75vw, 1.875rem); margin-bottom: 22px; }
+.purchase-product-brand { text-transform: uppercase; }
+
 .purchase-flow .purchase-button {
   position: relative;
   display: inline-flex;

@@ -33,6 +33,15 @@
 
 .purchase-flow [hidden] { display: none !important; }
 
+main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer {
+  padding-block: clamp(30px, 2.8vw, 38px) 18px;
+}
+
+main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer .store-footer__bottom {
+  margin-top: 28px;
+  padding-top: 16px;
+}
+
 .purchase-breadcrumb {
   display: flex;
   flex-wrap: wrap;

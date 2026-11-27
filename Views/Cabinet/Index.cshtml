@@ -2,62 +2,98 @@
 @using System.Globalization
 @{
   Layout = "_CabinetLayout";
+  var name = Model.Profile.DisplayName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+  var greeting = name is null ? "Добро пожаловать!" : $"Привет, {name}!";
   var culture = CultureInfo.GetCultureInfo("ru-RU");
 }
+<section class="account-banner" aria-labelledby="account-welcome">
+  <div class="account-banner__copy">
+    <h2 id="account-welcome">@greeting</h2>
+    <p>Управляйте заказами, избранным и личными данными.</p>
+  </div>
+  <partial name="_BannerPhoto" />
+</section>
 
-<div class="customer-overview">
-  <section class="account-panel">
-    <h2>Профиль</h2>
-    <div class="account-panel__contact">
-      <strong>@(string.IsNullOrWhiteSpace(Model.Profile.DisplayName) ? "Покупатель" : Model.Profile.DisplayName)</strong>
-      @if (!string.IsNullOrWhiteSpace(Model.Profile.Email)) { <span>@Model.Profile.Email</span> }
-      @if (!string.IsNullOrWhiteSpace(Model.Profile.Phone)) { <span>@Model.Profile.Phone</span> }
+<nav class="account-shortcuts" aria-label="Быстрые переходы">
+  <a class="account-panel account-shortcut" asp-action="Orders">
+    <partial name="_AccountIcon" model='"orders"' />
+    <span>Мои заказы <strong data-order-count>@Model.OrderCount</strong></span>
+    <partial name="_AccountIcon" model='"chevron"' />
+  </a>
+  <a class="account-panel account-shortcut" asp-action="Favorites">
+    <partial name="_AccountIcon" model='"heart"' />
+    <span>Избранное <strong data-favorites-count>@Model.FavoriteCount</strong></span>
+    <partial name="_AccountIcon" model='"chevron"' />
+  </a>
+  <a class="account-panel account-shortcut" asp-action="Profile">
+    <partial name="_AccountIcon" model='"profile"' />
+    <span>Профиль <small>Настроить данные</small></span>
+    <partial name="_AccountIcon" model='"chevron"' />
+  </a>
+</nav>
+
+<div class="account-overview-grid">
+  <section class="account-panel account-recent" aria-labelledby="account-recent-title">
+    <div class="account-section-header">
+      <h2 id="account-recent-title">Последние заказы</h2>
+      <a class="account-text-link" asp-action="Orders">Все заказы <partial name="_AccountIcon" model='"arrow"' /></a>
     </div>
-    <a class="account-action" asp-action="Profile">Изменить</a>
-  </section>
-  <section class="account-panel">
-    <h2>Последний заказ</h2>
-    @if (Model.LatestOrder is { } order)
+    @if (Model.LatestOrders.Count == 0)
     {
-      <div class="account-latest">
-        <partial name="_OrderImage" model="order.ImageUrl" />
-        <div class="account-latest__details">
-          <strong>Заказ №@order.Number</strong>
-          <time datetime="@order.CreatedAt.ToString("O")">@order.CreatedAt.ToLocalTime().ToString("d MMMM yyyy", culture)</time>
-          <span class="account-muted">@order.Status</span>
-          <strong>@order.Total.ToString("N0", culture) ₽</strong>
-          <a class="account-action" asp-action="Order" asp-route-publicId="@order.PublicId">Подробнее</a>
-        </div>
-      </div>
+      <partial name="_EmptyState" model='(("orders", "Пока нет заказов.", "Здесь появятся оформленные заказы."))' />
     }
     else
     {
-      <p class="account-muted">Пока нет заказов.</p>
-      <a class="account-action" asp-controller="Catalog" asp-action="Index">Перейти в каталог</a>
+      <ul class="account-orders">
+        @foreach (var order in Model.LatestOrders) { <partial name="_OrderRow" model="order" /> }
+      </ul>
+    }
+  </section>
+  <section class="account-panel account-recommendations" aria-labelledby="account-recommendations-title" data-recommendations>
+    <h2 id="account-recommendations-title">Хиты и новинки</h2>
+    @if (Model.Recommendations.Count == 0)
+    {
+      <p class="account-muted">Подборка пока недоступна.</p>
+      <a class="account-text-link" asp-controller="Catalog" asp-action="Index">Перейти в каталог <partial name="_AccountIcon" model='"arrow"' /></a>
+    }
+    else
+    {
+      <div class="account-recommendations__slides">
+        @for (var index = 0; index < Model.Recommendations.Count; index++)
+        {
+          var product = Model.Recommendations[index];
+          var image = product.Variants.FirstOrDefault()?.ThumbnailUrl;
+          if (string.IsNullOrWhiteSpace(image)) image = product.ImageUrl;
+          <article class="account-recommendation" id="account-product-@index" data-recommendation hidden="@(index != 0)">
+            <div class="account-recommendation__copy">
+              <span class="account-muted">@product.BrandName</span>
+              <h3>@product.Name</h3>
+              @if (!string.IsNullOrWhiteSpace(product.Description)) { <p class="account-muted">@product.Description</p> }
+              <strong>@product.Price.ToString("N0", culture) ₽</strong>
+              <a class="account-action account-action--primary" asp-controller="Catalog" asp-action="Details" asp-route-id="@product.Id"
+                 aria-label="Подробнее о @product.BrandName @product.Name">Подробнее <partial name="_AccountIcon" model='"arrow"' /></a>
+            </div>
+            <div class="account-recommendation__photo">
+              <span class="account-photo-placeholder"><partial name="_AccountIcon" model='"photo"' /></span>
+              @if (!string.IsNullOrWhiteSpace(image))
+              {
+                <img src="@image" alt="" width="420" height="320" data-product-photo="card" data-account-photo decoding="async" />
+              }
+            </div>
+          </article>
+        }
+      </div>
+      @if (Model.Recommendations.Count > 1)
+      {
+        <div class="account-recommendations__controls" data-recommendation-controls role="group" aria-label="Товары подборки" hidden>
+          @for (var index = 0; index < Model.Recommendations.Count; index++)
+          {
+            var product = Model.Recommendations[index];
+            <button type="button" aria-controls="account-product-@index" aria-pressed="@(index == 0 ? "true" : "false")"
+                    aria-label="@product.BrandName @product.Name"></button>
+          }
+        </div>
+      }
     }
   </section>
 </div>
-
-<section class="account-overview-favorites" data-account-preview>
-  <div class="account-section-header">
-    <h2>Избранное</h2>
-    @if (Model.Favorites.Count > 0)
-    {
-      <a class="account-text-link" asp-action="Favorites">Смотреть всё</a>
-    }
-  </div>
-  @if (Model.Favorites.Count == 0)
-  {
-    <p class="account-muted">Пока нет избранных товаров.</p>
-    <a class="account-text-link" asp-controller="Catalog" asp-action="Index">Перейти в каталог</a>
-  }
-  else
-  {
-    <div class="product-grid account-product-grid">
-      @foreach (var product in Model.Favorites)
-      {
-        <partial name="_ProductCard" model="product" />
-      }
-    </div>
-  }
-</section>

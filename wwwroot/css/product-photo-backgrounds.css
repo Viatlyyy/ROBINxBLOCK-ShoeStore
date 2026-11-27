@@ -1,0 +1,17 @@
+/* Keep product photographs on the same white surface across store pages. */
+.image-wrap,
+.catalog-page .image-wrap,
+.product-image-empty,
+.placeholder-card__image,
+.detail-gallery .detail-image,
+.gallery-thumbnail,
+.purchase-photo,
+.checkout-summary__photo,
+.account-recommendation__photo,
+.account-product__photo,
+.account-order-image,
+.account-banner {
+  background-color: #fff;
+}
+
+.feature-tile--triple { background-color: #fff !important; }

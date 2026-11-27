@@ -55,6 +55,7 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
                 remaining[(line.Product.Id, line.Variant.Id, line.Size)] = stock[0];
             }
 
+            var isCourier = model.DeliveryMethod == "Курьер";
             var order = new Order
             {
                 PublicId = confirmation,
@@ -63,11 +64,11 @@ public sealed class CheckoutService(ApplicationDbContext db, IMemoryCache cache)
                 Email = Clean(model.Email),
                 Phone = model.Phone.Trim(),
                 DeliveryMethod = model.DeliveryMethod,
-                City = Clean(model.City),
-                Street = Clean(model.Street),
-                House = Clean(model.House),
-                Apartment = Clean(model.Apartment),
-                Postcode = Clean(model.Postcode),
+                City = model.DeliveryMethod != "Самовывоз" ? Clean(model.City) : null,
+                Street = isCourier ? Clean(model.Street) : null,
+                House = isCourier ? Clean(model.House) : null,
+                Apartment = isCourier ? Clean(model.Apartment) : null,
+                Postcode = isCourier ? Clean(model.Postcode) : null,
                 Comment = Clean(model.Comment),
                 PaymentMethod = model.PaymentMethod,
                 UserId = userId,

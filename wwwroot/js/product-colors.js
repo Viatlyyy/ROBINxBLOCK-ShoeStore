@@ -1,6 +1,4 @@
 (() => {
-  const duration = 700;
-  const easing = 'cubic-bezier(.16, 1, .3, 1)';
   const states = new WeakMap();
   const preloads = new Map();
   const photos = window.productPhotos;
@@ -48,6 +46,7 @@
     if (!loaded) {
       image.hidden = true;
       image.removeAttribute('src');
+      delete image.dataset.photoSource;
       placeholder.hidden = false;
       return;
     }
@@ -56,8 +55,7 @@
       if (photos) photos.show(image, url, loaded);
       else image.src = loaded;
     };
-    const cabinetReducedMotion = card.closest('.customer-account') && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (image.hidden || !image.naturalWidth || cabinetReducedMotion) {
+    if (image.hidden || !image.naturalWidth || !window.storefrontMotion?.canAnimate(image)) {
       display();
       image.hidden = false;
       placeholder.hidden = true;
@@ -75,15 +73,19 @@
     state.overlay = overlay;
     display();
     image.setAttribute('aria-busy', 'true');
-    state.animations = [
-      overlay.animate(
-        [{ opacity: 1, transform: 'translateX(0) scale(1)' }, { opacity: 0, transform: 'translateX(-22px) scale(.985)' }],
-        { duration, easing, fill: 'both' }),
-      image.animate(
-        [{ opacity: 0, transform: 'translateX(22px) scale(1.015)' }, { opacity: 1, transform: 'translateX(0) scale(1)' }],
-        { duration, easing, fill: 'both' })
-    ];
-    await Promise.allSettled(state.animations.map(animation => animation.finished));
+    const motion = window.storefrontMotion;
+    const outgoing = motion.animate(overlay,
+      [{ opacity: 1, transform: 'translateX(0) scale(1)' }, { opacity: 0, transform: 'translateX(-22px) scale(.985)' }],
+      '--motion-photo-swap', { fill: 'both' });
+    const incoming = motion.animate(image,
+      [{ opacity: 0, transform: 'translateX(22px) scale(1.015)' }, { opacity: 1, transform: 'translateX(0) scale(1)' }],
+      '--motion-photo-swap', { fill: 'both' });
+    state.animations = [outgoing, incoming].filter(Boolean);
+    if (!outgoing || !incoming) {
+      reset(image, state);
+      return;
+    }
+    await Promise.all(state.animations.map(animation => animation.finished));
     if (request === state.request) reset(image, state);
   };
 

@@ -1,95 +1,101 @@
-@model ShoeStore.Models.CartPageViewModel
+@model CartPageViewModel
 @{
     ViewData["Title"] = "Корзина";
-    var total = Model.Lines.Sum(x => x.Total);
-    var count = Model.Lines.Sum(x => x.Quantity);
+    var total = Model.Lines.Sum(line => line.Total);
+    var count = Model.Lines.Sum(line => line.Quantity);
+    var itemsLabel = CartPageViewModel.ItemsLabel(count);
 }
 
-<section class="cart-page">
-  <header class="cart-page__heading">
-    <h1>Корзина</h1>
-    <p data-cart-items-label>@CartPageViewModel.ItemsLabel(count)</p>
+<section id="purchase-content" class="purchase-flow cart-page" data-purchase-flow aria-labelledby="cart-title">
+  <nav class="purchase-breadcrumb" aria-label="Хлебные крошки">
+    <a asp-controller="Home" asp-action="Index">Главная</a><span aria-hidden="true">/</span>
+    <span aria-current="page">Корзина</span>
+  </nav>
+  <header class="purchase-heading">
+    <h1 id="cart-title">Корзина</h1>
   </header>
 
-  @if (TempData["Message"] is not null)
-  {
-    <div class="notice">@TempData["Message"]</div>
-  }
+  <div class="purchase-notice" role="status" data-cart-notice>@TempData["Message"]</div>
+  <div class="purchase-notice purchase-notice--error" role="alert" data-cart-error hidden>
+    <span data-cart-error-message></span>
+    <a asp-action="Index">Обновить корзину</a>
+  </div>
 
-  @if (!Model.Lines.Any())
-  {
-    <div class="cart-empty"><h2>Корзина пока пуста</h2><a class="button" asp-controller="Home" asp-action="Index" asp-fragment="catalog">Перейти в каталог</a></div>
-  }
-  else
-  {
-    <div class="cart-reference-layout">
-      <div class="cart-reference-lines">
+  <div class="cart-empty" data-cart-empty hidden="@(count > 0)">
+    <div class="cart-empty__icon"><partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"cart"' /></div>
+    <h2 tabindex="-1">Корзина пока пуста</h2>
+    <p>Добавьте понравившуюся пару из каталога.</p>
+    <a class="button purchase-button" asp-controller="Catalog" asp-action="Index">
+      Перейти в каталог <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
+    </a>
+  </div>
+
+  <div class="purchase-columns cart-reference-layout" data-cart-content hidden="@(count == 0)">
+    <section class="cart-reference-lines" aria-labelledby="cart-items-title">
+      <header class="cart-reference-lines__heading">
+        <h2 id="cart-items-title">Ваши товары</h2>
+        <span data-cart-items-label>@itemsLabel</span>
+      </header>
+      <div class="cart-reference-items" data-cart-lines>
         @foreach (var line in Model.Lines)
         {
-          <article class="cart-reference-item" data-cart-line>
-            <a class="cart-reference-item__image" asp-controller="Catalog" asp-action="Details" asp-route-id="@line.Product.Id" asp-route-variantId="@line.Variant.Id" aria-label="Открыть @line.Product.Brand.Name @line.Product.Name">
-              @{ var image = string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl; }
-              @if (string.IsNullOrWhiteSpace(image))
+          var atLimit = line.Quantity >= line.MaximumQuantity;
+          var image = string.IsNullOrWhiteSpace(line.Variant.ImageUrl) ? line.Product.ImageUrl : line.Variant.ImageUrl;
+          var name = $"{line.Product.Brand.Name} {line.Product.Name}";
+          <article class="cart-reference-item" data-cart-key="@line.Variant.Id:@line.Size" data-cart-name="@name" data-cart-line>
+            <a class="purchase-photo cart-reference-item__image" asp-controller="Catalog" asp-action="Details"
+               asp-route-id="@line.Product.Id" asp-route-variantId="@line.Variant.Id" aria-label="Открыть @name">
+              <span class="purchase-photo__fallback" aria-hidden="true">Нет фото</span>
+              @if (!string.IsNullOrWhiteSpace(image))
               {
-                <span class="product-image-empty">Нет фотографии</span>
-              }
-              else
-              {
-                <img src="@image" alt="@line.Product.Brand.Name @line.Product.Name" data-product-photo="compact" decoding="async" />
+                <img src="@image" alt="" data-product-photo="compact" data-purchase-photo decoding="async" />
               }
             </a>
             <div class="cart-reference-item__details">
-              <p class="cart-reference-item__brand">@line.Product.Brand.Name</p>
-              <h2>@line.Product.Name</h2>
+              <p class="purchase-product-brand">@line.Product.Brand.Name</p>
+              <h3><a asp-controller="Catalog" asp-action="Details" asp-route-id="@line.Product.Id" asp-route-variantId="@line.Variant.Id">@line.Product.Name</a></h3>
               <p>Цвет: @line.Variant.Name</p>
-              <p>Размер: @line.Size EU</p>
+              <p class="cart-reference-item__size">Размер: @line.Size EU</p>
             </div>
-            <form class="cart-reference-item__remove" asp-action="Remove" method="post">
+            <form class="cart-reference-item__quantity" asp-action="ChangeQuantity" method="post"
+                  aria-label="Количество для @name, @line.Size EU" data-cart-quantity-form>
               <input type="hidden" name="variantId" value="@line.Variant.Id" />
               <input type="hidden" name="size" value="@line.Size" />
-              <button type="submit" aria-label="Удалить @line.Product.Brand.Name @line.Product.Name">×</button>
+              <button type="submit" name="change" value="-1" aria-label="Уменьшить количество" disabled="@(line.Quantity <= 1)">−</button>
+              <span data-cart-line-quantity>@line.Quantity</span>
+              <button type="submit" name="change" value="1" aria-label="Увеличить количество" disabled="@atLimit">+</button>
             </form>
-            <form class="cart-reference-item__quantity" asp-action="ChangeQuantity" method="post" aria-label="Количество @line.Product.Name" data-cart-quantity-form>
-              <input type="hidden" name="variantId" value="@line.Variant.Id" />
-              <input type="hidden" name="size" value="@line.Size" />
-              <button type="submit" name="change" value="-1" aria-label="Уменьшить количество">−</button><span data-cart-line-quantity>@line.Quantity</span><button type="submit" name="change" value="1" aria-label="Увеличить количество">+</button>
-            </form>
-            <strong class="cart-reference-item__price" data-cart-line-total>@line.Total.ToString("N0") ₽</strong>
+            <div class="cart-reference-item__cost">
+              <strong class="cart-reference-item__price" data-cart-line-total>@line.Total.ToString("N0") ₽</strong>
+              <form class="cart-reference-item__remove" asp-action="Remove" method="post" data-cart-remove-form>
+                <input type="hidden" name="variantId" value="@line.Variant.Id" />
+                <input type="hidden" name="size" value="@line.Size" />
+                <button type="submit" aria-label="Удалить @name, @line.Size EU">Удалить</button>
+              </form>
+            </div>
           </article>
         }
       </div>
+      <a class="purchase-back" asp-controller="Catalog" asp-action="Index">
+        <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"back"' /> Продолжить покупки
+      </a>
+    </section>
 
-      <aside class="cart-order-card">
-        <h2>Ваш заказ</h2>
-        <label class="cart-promo"><span>Промокод</span><div><input type="text" placeholder="Введите промокод" disabled /><button type="button" aria-label="Применить промокод" disabled>→</button></div></label>
-        <dl>
-          <div><dt>Подытог</dt><dd data-cart-subtotal>@total.ToString("N0") ₽</dd></div>
-          <div><dt>Доставка</dt><dd>Бесплатно</dd></div>
-          <small>Стандартная доставка 1–3 дня</small>
-          <div class="cart-order-card__total"><dt>Итого</dt><dd data-cart-total>@total.ToString("N0") ₽</dd></div>
-        </dl>
-        <a class="button cart-order-card__checkout" asp-action="Checkout">Оформить заказ</a>
-        @if (User.Identity?.IsAuthenticated != true)
-        {
-          <p class="cart-order-card__login-note">Войдите, чтобы оформить заказ. Корзина сохранится.</p>
-        }
-        <a class="cart-order-card__continue" asp-controller="Home" asp-action="Index" asp-fragment="catalog">Продолжить покупки</a>
-      </aside>
-    </div>
-  }
-</section>
-
-@if (Model.Recommendations.Any())
-{
-  <section class="cart-recommendations">
-    <div class="cart-recommendations__heading"><h2>С этим покупают</h2><a asp-controller="Home" asp-action="Index" asp-fragment="catalog">Смотреть все <span>→</span></a></div>
-    <div class="cart-recommendations__grid">@foreach (var product in Model.Recommendations) { <partial name="_ProductCard" model="product" /> }</div>
-  </section>
-}
-
-<section class="cart-benefits" aria-label="Преимущества RONINxBLOCK">
-  <div><span>▱</span><p><b>Бесплатная доставка</b><small>По всей России</small></p></div>
-  <div><span>▣</span><p><b>Безопасная оплата</b><small>Мы защищаем ваши данные</small></p></div>
-  <div><span>◇</span><p><b>Лёгкий возврат</b><small>14 дней на возврат</small></p></div>
-  <div><span>☆</span><p><b>Поддержка 24/7</b><small>Мы всегда на связи</small></p></div>
+    <aside class="purchase-summary cart-order-card" aria-labelledby="cart-summary-title">
+      <h2 id="cart-summary-title">Ваш заказ</h2>
+      <dl class="purchase-totals">
+        <div><dt>Подытог</dt><dd data-cart-subtotal>@total.ToString("N0") ₽</dd></div>
+        <div><dt>Доставка</dt><dd>Не рассчитана</dd></div>
+        <div class="purchase-totals__total"><dt>Итого за товары</dt><dd data-cart-total>@total.ToString("N0") ₽</dd></div>
+      </dl>
+      <a class="button purchase-button cart-order-card__checkout" asp-action="Checkout" data-cart-checkout>
+        Перейти к оформлению <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
+      </a>
+      @if (User.Identity?.IsAuthenticated != true)
+      {
+        <p class="cart-order-card__login-note">Войдите, чтобы оформить заказ. Корзина сохранится.</p>
+      }
+    </aside>
+  </div>
+  <p class="sr-only" role="status" data-cart-announcement></p>
 </section>

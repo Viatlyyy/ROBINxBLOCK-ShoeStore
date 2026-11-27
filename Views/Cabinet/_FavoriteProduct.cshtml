@@ -1,0 +1,39 @@
+@model ShoeStore.Models.ProductCardViewModel
+@using System.Globalization
+@{
+  var culture = CultureInfo.GetCultureInfo("ru-RU");
+  var variant = Model.Variants.FirstOrDefault();
+  var available = Model.Variants.FirstOrDefault(item => item.Sizes.Count > 0);
+  var image = variant?.ThumbnailUrl;
+  if (string.IsNullOrWhiteSpace(image)) image = Model.ImageUrl;
+}
+<article class="product account-product" data-product-card>
+  <a class="account-product__link" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id">
+    <div class="account-product__photo">
+      <span class="account-photo-placeholder"><partial name="_AccountIcon" model='"photo"' /></span>
+      @if (!string.IsNullOrWhiteSpace(image))
+      {
+        <img src="@image" alt="" width="360" height="252" data-product-photo="card" data-account-photo loading="lazy" decoding="async" />
+      }
+    </div>
+    <div class="account-product__name">
+      <span class="account-muted">@Model.BrandName</span>
+      <h2>@Model.Name</h2>
+    </div>
+  </a>
+  <partial name="_FavoriteButton" model="Model.Id" />
+  <div class="account-product__footer">
+    <strong>@Model.Price.ToString("N0", culture) ₽</strong>
+    @if (available is null)
+    {
+      <span class="account-muted">Нет в наличии</span>
+    }
+    else
+    {
+      <a class="account-icon-link" asp-controller="Catalog" asp-action="Details" asp-route-id="@Model.Id" asp-route-variantId="@available.Id"
+         aria-label="Выбрать размер для @Model.BrandName @Model.Name" title="Выбрать размер">
+        <partial name="_AccountIcon" model='"cart"' />
+      </a>
+    }
+  </div>
+</article>

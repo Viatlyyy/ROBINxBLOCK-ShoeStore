@@ -18,10 +18,15 @@ public sealed class FavoritesService(ApplicationDbContext db, ICatalogQueryServi
                 .Select(favorite => favorite.ProductId).ToHashSetAsync(cancellationToken);
     }
 
+    private IQueryable<Favorite> ActiveFor(string userId) => db.Favorites
+        .Where(favorite => favorite.UserId == userId && favorite.Product.Status == ProductStatus.Active);
+
+    public Task<int> CountAsync(string userId, CancellationToken cancellationToken) =>
+        ActiveFor(userId).CountAsync(cancellationToken);
+
     public async Task<IReadOnlyList<ProductCardViewModel>> GetProductsAsync(string userId, int? limit, CancellationToken cancellationToken)
     {
-        IQueryable<int> query = db.Favorites
-            .Where(favorite => favorite.UserId == userId && favorite.Product.Status == ProductStatus.Active)
+        IQueryable<int> query = ActiveFor(userId)
             .OrderByDescending(favorite => favorite.CreatedAt).ThenByDescending(favorite => favorite.Id)
             .Select(favorite => favorite.ProductId);
         if (limit is int count) query = query.Take(count);

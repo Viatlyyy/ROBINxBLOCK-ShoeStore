@@ -35,7 +35,7 @@ public class TCustomerAccountIntegration
         Assert.AreEqual("shoestore2", settings.Database, "Настройте проверочное подключение к shoestore2.");
         connection = new NpgsqlConnection(settings.ConnectionString);
         await connection.OpenAsync();
-        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims",
+        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims", "UserAvatars",
             "Brands", "Products", "ProductVariants", "ProductVariantSizes", "ProductVariantImages", "Favorites", "Orders", "OrderItems" })
         {
             await using var copy = new NpgsqlCommand($"""CREATE TEMP TABLE "{table}" (LIKE public."{table}" INCLUDING ALL)""", connection);
@@ -291,11 +291,18 @@ public class TCustomerAccountIntegration
         Assert.AreEqual("/Account/Orders", login.Headers.Location?.OriginalString);
 
         var overview = WebUtility.HtmlDecode(await client.GetStringAsync("/Account"));
-        StringAssert.Contains(overview, "Последний заказ");
+        StringAssert.Contains(overview, "Последние заказы");
         StringAssert.Contains(overview, "1042");
+        StringAssert.Contains(overview, "Снимок модели при покупке");
+        StringAssert.Contains(overview, "Тестовая модель");
+        StringAssert.Contains(overview, "data-order-count>1</strong>");
+        StringAssert.Contains(overview, "data-favorites-count>0</strong>");
+        Assert.IsFalse(overview.Contains("1018", StringComparison.Ordinal));
         Assert.IsTrue(overview.Contains("data-product-photo=\"compact\"", StringComparison.Ordinal));
         var orders = WebUtility.HtmlDecode(await client.GetStringAsync("/Account/Orders"));
         StringAssert.Contains(orders, "1042");
+        StringAssert.Contains(orders, "Снимок модели при покупке");
+        StringAssert.Contains(orders, "Размер: 42 EU");
         Assert.IsFalse(orders.Contains("1018", StringComparison.Ordinal));
         Assert.IsFalse(orders.Contains("1019", StringComparison.Ordinal));
         var details = WebUtility.HtmlDecode(await client.GetStringAsync("/Account/Orders/" + OwnOrder));
@@ -303,6 +310,23 @@ public class TCustomerAccountIntegration
         StringAssert.Contains(details, "Black / Castlerock");
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/Account/Orders/" + OtherOrder)).StatusCode);
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync("/Account/Orders/" + Guid.NewGuid())).StatusCode);
+    }
+
+    [TestMethod]
+    public async Task Account_OrderHistoryOffersRetryWhenDataCannotBeLoaded()
+    {
+        using var client = Client();
+        await Login(client);
+        await using var unavailable = new NpgsqlCommand("""
+            ALTER TABLE pg_temp."Orders" RENAME TO "UnavailableOrders"
+            """, connection);
+        await unavailable.ExecuteNonQueryAsync();
+
+        var response = await client.GetAsync("/Account/Orders");
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+        StringAssert.Contains(html, "Повторить попытку");
+        Assert.IsFalse(html.Contains("PostgresException", StringComparison.Ordinal));
     }
 
     [TestMethod]
@@ -374,6 +398,66 @@ public class TCustomerAccountIntegration
         var details = await client.GetStringAsync("/Catalog/Details/1");
         Assert.IsFalse(Regex.IsMatch(details, "class=\"favorite-button\"[^>]+aria-pressed=\"true\""));
         Assert.AreEqual(HttpStatusCode.Redirect, (await client.GetAsync("/Account/Favorites")).StatusCode);
+    }
+
+    [TestMethod]
+    public async Task Account_AvatarUploadRequiresTokenAllowsReplacementAndIsPrivate()
+    {
+        const string endpoint = "/Account/Avatar";
+        var firstPhoto = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAYAAABr5z2BAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAaSURBVDhPY7gjYvOfEjxqwKgBIDzkDbD5DwATUqBQPwgNzAAAAABJRU5ErkJggg==");
+        var replacement = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAABAAAAAMCAYAAABr5z2BAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAaSURBVDhPY5Cb8P8/JXjUgFEDQHjIG/D/PwCQAAEfD0ljoAAAAABJRU5ErkJggg==");
+
+        using var client = Client();
+        Assert.AreEqual(HttpStatusCode.Redirect, (await client.GetAsync(endpoint)).StatusCode);
+        await Login(client);
+        var profile = await client.GetStringAsync("/Account/Profile");
+        StringAssert.Contains(profile, "enctype=\"multipart/form-data\"");
+        StringAssert.Contains(profile, "class=\"account-avatar-editor\"");
+        StringAssert.Contains(profile, "class=\"account-avatar-editor__pencil\"");
+        Assert.IsFalse(profile.Contains("account-avatar-panel", StringComparison.Ordinal));
+        Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync(endpoint)).StatusCode);
+
+        async Task<HttpResponseMessage> Upload(byte[] data, bool includeToken = true)
+        {
+            using var form = new MultipartFormDataContent();
+            var photo = new ByteArrayContent(data);
+            photo.Headers.ContentType = new("image/png");
+            form.Add(photo, "photo", "portrait.png");
+            if (includeToken) form.Add(new StringContent(Token(profile)), "__RequestVerificationToken");
+            return await client.PostAsync(endpoint, form);
+        }
+
+        Assert.AreEqual(HttpStatusCode.BadRequest, (await Upload(firstPhoto, includeToken: false)).StatusCode);
+        var saved = await Upload(firstPhoto);
+        Assert.AreEqual(HttpStatusCode.Redirect, saved.StatusCode);
+        Assert.AreEqual("/Account/Profile", saved.Headers.Location?.OriginalString);
+        var firstResponse = await client.GetAsync(endpoint);
+        Assert.AreEqual(HttpStatusCode.OK, firstResponse.StatusCode);
+        Assert.AreEqual("image/webp", firstResponse.Content.Headers.ContentType?.MediaType);
+        Assert.IsTrue(firstResponse.Headers.CacheControl?.NoStore);
+        var firstAvatar = await firstResponse.Content.ReadAsByteArrayAsync();
+        await using var storedPhoto = new NpgsqlCommand("""
+            SELECT "Photo" FROM "UserAvatars" WHERE "UserId" = 'account-a' AND pg_typeof("Photo") = 'bytea'::regtype
+            """, connection);
+        CollectionAssert.AreEqual(firstAvatar, (byte[]?)await storedPhoto.ExecuteScalarAsync());
+        var updatedProfile = WebUtility.HtmlDecode(await client.GetStringAsync("/Account/Profile"));
+        StringAssert.Contains(updatedProfile, "Фото профиля обновлено.");
+        Assert.AreEqual(3, Regex.Matches(updatedProfile, "src=\"/Account/Avatar\"").Count);
+        StringAssert.Contains(await client.GetStringAsync("/"), "src=\"/Account/Avatar\"");
+
+        using var other = Client();
+        await Login(other, "other@example.com");
+        Assert.AreEqual(HttpStatusCode.NotFound, (await other.GetAsync(endpoint)).StatusCode);
+
+        Assert.AreEqual(HttpStatusCode.Redirect, (await Upload([1, 2, 3])).StatusCode);
+        var error = WebUtility.HtmlDecode(await client.GetStringAsync("/Account/Profile"));
+        StringAssert.Contains(error, "Выберите изображение JPG, PNG или WebP.");
+        CollectionAssert.AreEqual(firstAvatar, await client.GetByteArrayAsync(endpoint));
+
+        Assert.AreEqual(HttpStatusCode.Redirect, (await Upload(replacement)).StatusCode);
+        var replacedAvatar = await client.GetByteArrayAsync(endpoint);
+        Assert.IsFalse(firstAvatar.SequenceEqual(replacedAvatar));
+        CollectionAssert.AreEqual(replacedAvatar, (byte[]?)await storedPhoto.ExecuteScalarAsync());
     }
 
     [TestMethod]

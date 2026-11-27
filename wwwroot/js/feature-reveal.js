@@ -1,22 +1,21 @@
 (() => {
   const items = document.querySelectorAll('[data-reveal]');
-  if (!items.length) return;
+  if (!items.length || typeof IntersectionObserver !== 'function') return;
 
-  document.documentElement.classList.add('has-reveal-motion');
-  const reveal = element => element.classList.add('is-visible');
+  try {
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        observer.unobserve(entry.target);
+        if (!document.hidden) entry.target.classList.add('is-revealing');
+      }
+    }, { threshold: .14 });
+    items.forEach(item => observer.observe(item));
+  } catch { /* All reveal targets are visible in the base stylesheet. */ }
 
-  if (!('IntersectionObserver' in window)) {
-    items.forEach(reveal);
-    return;
+  function settle() {
+    items.forEach(item => item.classList.remove('is-revealing'));
   }
-
-  const observer = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      reveal(entry.target);
-      observer.unobserve(entry.target);
-    });
-  }, { threshold: .14 });
-
-  items.forEach(item => observer.observe(item));
+  window.addEventListener('pagehide', settle);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) settle(); });
 })();

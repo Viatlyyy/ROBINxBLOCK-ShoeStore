@@ -105,11 +105,28 @@ public class TCartIntegration
             ["quantity"] = quantity.ToString(), ["change"] = change.ToString()
         }));
 
+    [TestMethod]
+    public async Task CartCount_ReadsOnlyTheCurrentSessionAndPreventsCaching()
+    {
+        using var added = await Post("Add", 37, quantity: 2);
+        Assert.AreEqual(HttpStatusCode.OK, added.StatusCode);
+
+        using var response = await client.GetAsync("/Cart/Count");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(response.Headers.CacheControl?.NoStore == true);
+        var badge = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(2, badge.GetProperty("count").GetInt32());
+
+        using var separateSession = app.CreateClient();
+        var emptyBadge = await separateSession.GetFromJsonAsync<JsonElement>("/Cart/Count");
+        Assert.AreEqual(0, emptyBadge.GetProperty("count").GetInt32());
+    }
+
     private const string CheckoutUserId = "cart-test-customer";
 
     private async Task SignInForCheckoutAsync()
     {
-        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims", "Favorites" })
+        foreach (var table in new[] { "AspNetUsers", "AspNetUserClaims", "AspNetRoles", "AspNetUserRoles", "AspNetRoleClaims", "UserAvatars", "Favorites" })
         {
             await using var copy = new NpgsqlCommand($"""CREATE TEMP TABLE "{table}" (LIKE public."{table}" INCLUDING ALL)""", connection);
             await copy.ExecuteNonQueryAsync();
@@ -205,7 +222,9 @@ public class TCartIntegration
         foreach (var response in responses) Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
         var success = responses.Single(response => response.Headers.Location!.OriginalString.Contains("/Success/"));
         var receipt = WebUtility.HtmlDecode(await client.GetStringAsync(success.Headers.Location));
-        StringAssert.Contains(receipt, "Заказ №1 создан");
+        StringAssert.Contains(receipt, "Заказ принят");
+        StringAssert.Contains(receipt, "Заказ №1");
+        StringAssert.Contains(receipt, $"href=\"/Account/Orders/{confirmation}\"");
         Assert.IsFalse(receipt.Contains(fields["Phone"]));
         Assert.AreEqual(HttpStatusCode.NotFound, (await client.GetAsync($"/Cart/Success/{Guid.NewGuid()}")).StatusCode);
         var details = await client.GetStringAsync("/Catalog/Details/1");
@@ -329,7 +348,15 @@ public class TCartIntegration
         Assert.AreEqual(2, Regex.Matches(cart, "data-cart-line>").Count);
         using var guest = app.CreateClient();
         StringAssert.Contains(WebUtility.HtmlDecode(await guest.GetStringAsync("/Cart")), "Корзина пока пуста");
-        Assert.AreEqual(HttpStatusCode.Redirect, (await Post("Remove", 37)).StatusCode);
+        var removal = await Post("Remove", 37);
+        Assert.AreEqual(HttpStatusCode.OK, removal.StatusCode);
+        var remaining = await removal.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(1, remaining.GetProperty("lineCount").GetInt32());
+        Assert.AreEqual(2, remaining.GetProperty("count").GetInt32());
+        Assert.AreEqual(4000m, remaining.GetProperty("total").GetDecimal());
+        Assert.AreEqual(38, remaining.GetProperty("lines")[0].GetProperty("size").GetInt32());
+
+        client.DefaultRequestHeaders.Remove("X-Requested-With");
         Assert.AreEqual(HttpStatusCode.Redirect, (await Post("Remove", 38)).StatusCode);
         StringAssert.Contains(WebUtility.HtmlDecode(await client.GetStringAsync("/Cart")), "Корзина пока пуста");
     }

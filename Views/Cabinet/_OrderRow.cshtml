@@ -1,0 +1,23 @@
+@model ShoeStore.Models.AccountOrderSummary
+@using System.Globalization
+@{
+  var compact = ViewContext.RouteData.Values["action"] as string == "Index";
+  var culture = CultureInfo.GetCultureInfo("ru-RU");
+}
+<li class="account-orders__row">
+  <a class="account-order-row @(compact ? "account-order-row--compact" : null)" asp-action="Order" asp-route-publicId="@Model.PublicId">
+    <div class="account-order-row__number">
+      <strong>Заказ №@Model.Number</strong>
+      <time datetime="@Model.CreatedAt.ToString("O")">от @Model.CreatedAt.ToLocalTime().ToString("d MMMM yyyy", culture)</time>
+    </div>
+    <partial name="_OrderImage" model="Model.ImageUrl" />
+    <div class="account-order-row__product">
+      <strong>@(string.IsNullOrWhiteSpace(Model.ProductName) ? "Состав заказа" : Model.ProductName)</strong>
+      @if (Model.Size is int size) { <span>Размер: @size EU</span> }
+      @if (Model.AdditionalLines > 0) { <span>Ещё позиций: @Model.AdditionalLines</span> }
+    </div>
+    @if (!compact) { <partial name="_OrderStatus" model="Model.Status" /> }
+    <strong class="account-order-row__total">@Model.Total.ToString("N0", culture) ₽</strong>
+    <partial name="_AccountIcon" model='"chevron"' />
+  </a>
+</li>

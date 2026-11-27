@@ -2,13 +2,17 @@
 @{ ViewData["Title"] = "Каталог"; }
 
 <section class="content catalog-page" aria-labelledby="catalog-title">
-  <div class="section-title">
+  <nav class="catalog-breadcrumb" aria-label="Хлебные крошки">
+    <a asp-controller="Home" asp-action="Index">Главная</a><span aria-hidden="true">/</span><span aria-current="page">Каталог</span>
+  </nav>
+  <div class="catalog-toolbar">
     <h1 id="catalog-title">Каталог</h1>
-  </div>
-  <div class="catalog-search">
-    <label for="catalog-search">Поиск по названию или бренду</label>
-    <input id="catalog-search" form="catalog-filters" name="search" type="search"
-           value="@Model.Selection.SearchText" placeholder="Например, Dunk или New Balance" />
+    <div class="catalog-search">
+      <label class="sr-only" for="catalog-search">Поиск по названию или бренду</label>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m15.5 15.5 5 5" /></svg>
+      <input id="catalog-search" form="catalog-filters" name="search" type="search"
+             value="@Model.Selection.SearchText" placeholder="Поиск по названию или бренду" />
+    </div>
   </div>
   <div class="catalog-layout">
     <partial name="_CatalogControls" model="Model" />

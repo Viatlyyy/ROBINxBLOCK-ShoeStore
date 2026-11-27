@@ -145,6 +145,14 @@
     return new Promise(resolve => output.toBlob(blob => resolve(blob ? URL.createObjectURL(blob) : null), 'image/webp', .94));
   }
 
+  function load(image, source) {
+    return new Promise(resolve => {
+      image.onload = () => resolve(true);
+      image.onerror = () => resolve(false);
+      image.src = source;
+    });
+  }
+
   function prepare(source, role) {
     const url = new URL(source, document.baseURI);
     const size = sizes[role] ?? sizes.card;
@@ -152,13 +160,20 @@
     if (!prepared.has(key)) {
       prepared.set(key, (async () => {
         const image = new Image();
-        image.src = url.href;
-        try { await image.decode(); } catch {
+        if (!await load(image, url.href)) {
           prepared.delete(key);
           return null;
         }
+        try { await image.decode?.(); } catch { return url.href; }
         if (url.origin !== location.origin || !url.pathname.startsWith('/images/')) return url.href;
-        try { return await normalize(image, size) || url.href; } catch { return url.href; }
+        try {
+          const normalized = await normalize(image, size);
+          if (normalized) {
+            if (await load(new Image(), normalized)) return normalized;
+            URL.revokeObjectURL(normalized);
+          }
+        } catch { /* The original still works if normalization or blob loading fails. */ }
+        return url.href;
       })());
     }
     return prepared.get(key);
@@ -179,20 +194,45 @@
   }
 
   window.productPhotos = { prepare, show };
-  const observer = new IntersectionObserver(entries => {
-    for (const entry of entries) {
-      if (!entry.isIntersecting) continue;
-      observer.unobserve(entry.target);
-      void upgrade(entry.target);
+  function missing(image) {
+    if (!(image instanceof HTMLImageElement) || !image.matches('[data-variant-image]')) return;
+    const placeholder = image.closest('[data-product-card]')?.querySelector('[data-variant-image-empty]');
+    if (!placeholder) return;
+    image.hidden = true;
+    placeholder.hidden = false;
+  }
+  document.addEventListener('error', event => missing(event.target), true);
+
+  let observer;
+  try {
+    if (typeof IntersectionObserver === 'function') {
+      observer = new IntersectionObserver(entries => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          observer.unobserve(entry.target);
+          void upgrade(entry.target);
+        }
+      }, { rootMargin: '180px' });
     }
-  }, { rootMargin: '180px' });
-  document.querySelectorAll(selector).forEach(image => observer.observe(image));
+  } catch { /* Original photos remain available. */ }
+
+  function register(image) {
+    if (image.getAttribute('src') && image.complete && !image.naturalWidth) missing(image);
+    else observer?.observe(image);
+  }
+  document.querySelectorAll(selector).forEach(register);
+  if (typeof MutationObserver !== 'function') return;
   const changes = new MutationObserver(entries => {
     for (const entry of entries) {
+      for (const node of entry.removedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (node.matches(selector)) observer?.unobserve(node);
+        node.querySelectorAll(selector).forEach(image => observer?.unobserve(image));
+      }
       for (const node of entry.addedNodes) {
         if (!(node instanceof Element)) continue;
-        if (node.matches(selector)) observer.observe(node);
-        node.querySelectorAll(selector).forEach(image => observer.observe(image));
+        if (node.matches(selector)) register(node);
+        node.querySelectorAll(selector).forEach(register);
       }
     }
   });

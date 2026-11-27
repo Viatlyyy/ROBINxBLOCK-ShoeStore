@@ -1,0 +1,72 @@
+/* Readable text sizes outside the already styled catalog and home sections. */
+.details { font-size: 16px; line-height: 1.5; }
+.details .eyebrow { font-size: 14px; color: #595959; }
+.details h1 { line-height: 1.1; }
+.details h2 { font-size: 28px; line-height: 1.25; }
+.details .description,
+.details .product-reviews p { font-size: 16px; line-height: 1.65; color: #444; }
+.details .detail-color { font-size: 16px; }
+.details .detail-variant-picker > span { font-size: 14px; }
+.details .sizes span { font-size: 16px; }
+.details .product-order-controls { flex-wrap: wrap; }
+.details .product-order-controls__submit { font-size: 16px; line-height: 1.4; }
+.details .quantity-picker input { font-size: 16px; }
+.details .gallery-counter { font-size: 14px; }
+
+.account-page { font-size: 16px; line-height: 1.5; }
+.account-page .account-breadcrumb { font-size: 14px; color: #595959; }
+.account-page .account-page__lead { font-size: 16px; color: #595959; }
+.account-page .account-form-card__intro,
+.account-page .account-form-card__subline { font-size: 14px; color: #595959; }
+.account-page .account-form-card > label,
+.account-page .account-form-grid label { font-size: 14px; }
+.account-page .account-form-card input { font-size: 16px; }
+.account-page .account-check { display: block !important; padding-left: 24px; font-size: 14px !important; line-height: 1.45; }
+.account-page .account-check > span { position: absolute; left: 0; top: .15em; pointer-events: none; }
+.account-page .account-check input { left: 0; top: 0; width: 18px; height: 18px; }
+.account-page .account-check input:focus-visible + span { outline: 2px solid #111; outline-offset: 3px; }
+.account-page .account-submit,
+.account-page .account-secondary { font-size: 14px; line-height: 1.4; }
+.account-page .account-separator,
+.account-page .account-terms { font-size: 14px; color: #595959; }
+.account-page .account-success,
+.account-page .account-validation { font-size: 14px; }
+.account-page .account-benefit-card__content > p { font-size: 16px; }
+.account-page .account-benefit-card__content b { font-size: 16px; }
+.account-page .account-benefit-card__content small { font-size: 14px; color: #595959; line-height: 1.45; }
+.account-benefits p { font-size: 14px; line-height: 1.45; }
+.account-benefits small { font-size: 14px; color: #595959; }
+
+.customer-account .account-breadcrumbs,
+.customer-account .customer-account__identity-text span,
+.customer-account .account-count,
+.customer-account .account-status,
+.customer-account .account-text-link,
+.customer-account .account-recommendation__copy p,
+.customer-account .account-order-row__product span,
+.customer-account .account-order-row time,
+.customer-account .account-order-row--compact,
+.customer-account .account-order-row--compact .account-order-row__total,
+.customer-account .account-order-row--compact :is(.account-order-row__product span, time),
+.customer-account .account-order-items__product span,
+.customer-account .account-product__name,
+.customer-account .account-product__footer,
+.customer-account .account-shortcut small,
+.customer-account .customer-profile__error { font-size: 14px; }
+
+.checkout-summary__item-info .purchase-product-brand,
+.checkout-summary__cost small,
+.cart-reference-item__details .purchase-product-brand { font-size: 14px; }
+.order-success .purchase-button,
+.order-success .order-success__link { font-size: 16px; }
+
+.storefront-shell .header nav,
+.storefront-shell .header-actions { font-size: 14px; }
+.storefront-shell .store-footer nav,
+.storefront-shell .store-footer p,
+.storefront-shell .store-footer address,
+.storefront-shell .store-footer__website { font-size: 14px; line-height: 1.6; }
+.storefront-shell .store-footer h2 { font-size: 16px; }
+.storefront-shell .store-footer__bottom { font-size: 13px; }
+.auth-home, .selection-page { font-size: 16px; line-height: 1.5; }
+.selection-page .eyebrow { font-size: 14px; }

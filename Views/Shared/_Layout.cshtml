@@ -12,8 +12,8 @@
   var isProductDetails = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Details", StringComparison.OrdinalIgnoreCase);
   var isCartIndex = isCart && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
-  var isOrderPage = isCart && (action.Equals("Checkout", StringComparison.OrdinalIgnoreCase)
-    || action.Equals("Success", StringComparison.OrdinalIgnoreCase));
+  var isCheckout = isCart && action.Equals("Checkout", StringComparison.OrdinalIgnoreCase);
+  var isOrderSuccess = isCart && action.Equals("Success", StringComparison.OrdinalIgnoreCase);
   var isCatalog = controller.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
     && action.Equals("Index", StringComparison.OrdinalIgnoreCase);
   var cartCount = ShoeStore.Services.CartService.GetCount(Context.Session, initialize: isProductDetails);
@@ -61,9 +61,12 @@
   }
   <link rel="stylesheet" href="~/css/account-menu.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/cart-fly.css" asp-append-version="true" />
-  @if (isCartIndex || isOrderPage)
+  @if (isCartIndex || isCheckout || isOrderSuccess)
   {
     <link rel="stylesheet" href="~/css/purchase-flow.css" asp-append-version="true" />
+  }
+  @if (isCartIndex || isCheckout)
+  {
     <script src="~/js/purchase-motion.js" asp-append-version="true"></script>
   }
   @if (isCartIndex) { <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" /> }
@@ -71,7 +74,8 @@
   {
     <link rel="stylesheet" href="~/css/variants.css" asp-append-version="true" />
   }
-  @if (isOrderPage) { <link rel="stylesheet" href="~/css/checkout-reference.css" asp-append-version="true" /> }
+  @if (isCheckout) { <link rel="stylesheet" href="~/css/checkout-reference.css" asp-append-version="true" /> }
+  @if (isOrderSuccess) { <link rel="stylesheet" href="~/css/order-success.css" asp-append-version="true" /> }
   @if (isAccountEntry) { <link rel="stylesheet" href="~/css/account-reference.css" asp-append-version="true" /> }
   <link rel="stylesheet" href="~/css/page-intro.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/performance.css" asp-append-version="true" />
@@ -83,7 +87,7 @@
   }
   <link rel="stylesheet" href="~/css/motion-policy.css" asp-append-version="true" />
 </head>
-<body class="storefront-shell @(isCabinet ? "customer-account-page" : null)">
+<body class="storefront-shell @(isCabinet ? "customer-account-page" : null) @(isOrderSuccess ? "order-success-page" : null)">
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
     <nav aria-label="Основная навигация">
@@ -181,7 +185,7 @@
     <script src="~/js/cart-fly.js" asp-append-version="true"></script>
   }
   @if (isCartIndex) { <script src="~/js/cart-quantity.js" asp-append-version="true"></script> }
-  @if (isOrderPage && action.Equals("Checkout", StringComparison.OrdinalIgnoreCase))
+  @if (isCheckout)
   {
     <script src="~/js/checkout-form.js" asp-append-version="true"></script>
   }

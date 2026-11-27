@@ -10,8 +10,11 @@
     <span aria-current="page">Заказ принят</span>
   </nav>
   <div class="order-success__body">
-    <div class="order-success__icon">
-      <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"check"' />
+    <div class="order-success__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" focusable="false">
+        <path pathLength="1" d="m4 12 5 5L20 6" />
+      </svg>
     </div>
     <header class="purchase-heading"><h1 id="success-title">Заказ принят</h1></header>
     <p class="order-success__number">Заказ №@Model.OrderNumber</p>

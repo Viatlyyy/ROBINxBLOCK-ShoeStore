@@ -1,4 +1,4 @@
-html[data-motion-entry] .purchase-flow { animation: purchase-enter var(--motion-reveal) var(--motion-ease-soft); }
+html[data-motion-entry] .purchase-flow:not(.order-success) { animation: purchase-enter var(--motion-reveal) var(--motion-ease-soft); }
 
 
 .purchase-flow {

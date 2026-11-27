@@ -11,18 +11,24 @@ using ShoeStore.Services;
 
 namespace ShoeStore.Controllers;
 
-public class CartController(CartService cart, ICatalogQueryService catalog, CheckoutService checkout, ApplicationDbContext db) : Controller
+public class CartController(CartService cart, CheckoutService checkout, ApplicationDbContext db) : Controller
 {
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken cancellationToken)
     {
+        var previousCount = CartService.GetCount(HttpContext.Session, initialize: false);
         var lines = await cart.GetLinesAsync(cancellationToken);
-        var selected = lines.Select(line => line.Product.Id).ToHashSet();
-        var home = await catalog.GetHomeAsync(cancellationToken);
-        var recommendations = home.Products.Where(product => !selected.Contains(product.Id))
-            .OrderByDescending(product => product.IsPopular).ThenByDescending(product => product.IsNew)
-            .ThenBy(product => product.Id).Take(4).ToList();
-        return View(new CartPageViewModel { Lines = lines, Recommendations = recommendations });
+        if (lines.Sum(line => line.Quantity) != previousCount)
+            TempData["Message"] = "Количество изменилось из-за остатков. Проверьте товары в корзине.";
+        return View(new CartPageViewModel { Lines = lines });
+    }
+
+    [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Count(CancellationToken cancellationToken)
+    {
+        await HttpContext.Session.LoadAsync(cancellationToken);
+        return Json(new { count = CartService.GetCount(HttpContext.Session, initialize: false) });
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -36,10 +42,10 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public IActionResult Remove(int variantId, int size)
+    public async Task<IActionResult> Remove(int variantId, int size, CancellationToken cancellationToken)
     {
         cart.Remove(variantId, size);
-        return RedirectToAction(nameof(Index));
+        return IsAjax() ? await CartStateAsync(variantId, size, cancellationToken) : RedirectToAction(nameof(Index));
     }
 
     [HttpPost, ValidateAntiForgeryToken]
@@ -47,10 +53,31 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
     {
         if (change is not (-1 or 1)) return BadRequest();
         await cart.ChangeQuantityAsync(variantId, size, change, cancellationToken);
-        if (!IsAjax()) return RedirectToAction(nameof(Index));
+        return IsAjax() ? await CartStateAsync(variantId, size, cancellationToken) : RedirectToAction(nameof(Index));
+    }
+
+    private async Task<IActionResult> CartStateAsync(int variantId, int size, CancellationToken cancellationToken)
+    {
         var lines = await cart.GetLinesAsync(cancellationToken);
-        var line = lines.FirstOrDefault(x => x.Variant.Id == variantId && x.Size == size);
-        return Json(new { lineCount = lines.Count, quantity = line?.Quantity ?? 0, lineTotal = line?.Total ?? 0, total = lines.Sum(x => x.Total), count = lines.Sum(x => x.Quantity) });
+        var selected = lines.FirstOrDefault(line => line.Variant.Id == variantId && line.Size == size);
+        var count = lines.Sum(line => line.Quantity);
+        return Json(new
+        {
+            lineCount = lines.Count,
+            quantity = selected?.Quantity ?? 0,
+            lineTotal = selected?.Total ?? 0,
+            total = lines.Sum(line => line.Total),
+            count,
+            itemsLabel = CartPageViewModel.ItemsLabel(count),
+            lines = lines.Select(line => new
+            {
+                variantId = line.Variant.Id,
+                line.Size,
+                line.Quantity,
+                line.Total,
+                line.MaximumQuantity
+            })
+        });
     }
 
     [HttpGet, Authorize]
@@ -116,11 +143,18 @@ public class CartController(CartService cart, ICatalogQueryService catalog, Chec
     }
 
     [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Success(Guid id, CancellationToken cancellationToken)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var order = await db.Orders.AsNoTracking()
             .Where(item => item.PublicId == id)
-            .Select(item => new OrderSuccessViewModel { OrderNumber = item.Id, PublicId = item.PublicId })
+            .Select(item => new OrderSuccessViewModel
+            {
+                OrderNumber = item.Id,
+                PublicId = item.PublicId,
+                CanViewOrder = userId != null && item.UserId == userId
+            })
             .FirstOrDefaultAsync(cancellationToken);
         return order is null ? NotFound() : View(order);
     }

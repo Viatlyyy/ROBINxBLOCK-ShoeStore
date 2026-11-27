@@ -195,8 +195,8 @@ public class THomePageIntegration
             var nav = Regex.Match(regionHtml, "<nav\\b[^>]*>[\\s\\S]*?</nav>");
             Assert.IsTrue(nav.Success, $"Отсутствует навигация в {region}.");
             StringAssert.Contains(nav.Value, "href=\"/Catalog\"");
-            StringAssert.Contains(nav.Value, "href=\"/Catalog?tag=new\"");
-            StringAssert.Contains(nav.Value, "href=\"/Catalog?tag=popular\"");
+            Assert.IsFalse(nav.Value.Contains("/Catalog?tag=new"), "В навигации нет пункта Новинки.");
+            Assert.IsFalse(nav.Value.Contains("/Catalog?tag=popular"), "В навигации нет пункта Хиты.");
         }
         var content = Regex.Match(html, "<main>([\\s\\S]*?)</main>").Value;
         Assert.AreEqual(4, Regex.Matches(content, "href=\"/Catalog\\?tag=new\"").Count);
@@ -223,6 +223,7 @@ public class THomePageIntegration
         CollectionAssert.AreEqual(new[] { "3", "7" }, query["brandIds"].ToArray());
         var html = await client.GetStringAsync(location);
         Assert.AreEqual(target == "/Catalog", html.Contains("<html"));
+        StringAssert.Contains(html, "data-product-badge=\"new\"");
         StringAssert.Contains(html, "data-product-badge=\"popular\"");
         databaseGuard.Verify(guard => guard.ConnectionOpening(It.IsAny<DbConnection>(),
             It.IsAny<ConnectionEventData>(), It.IsAny<InterceptionResult>()), Times.Never);

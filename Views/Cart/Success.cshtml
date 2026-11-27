@@ -1,2 +1,34 @@
-@model ShoeStore.Models.OrderSuccessViewModel
-<section class="content success"><p class="eyebrow">ЗАКАЗ ПРИНЯТ</p><h1>Спасибо за выбор.</h1><p>Заказ №@Model.OrderNumber создан. Мы свяжемся с вами для подтверждения.</p><a class="button" asp-controller="Home" asp-action="Index" asp-fragment="catalog">Продолжить покупки</a></section>
+@model OrderSuccessViewModel
+@{
+    ViewData["Title"] = "Заказ принят";
+}
+
+<section id="purchase-content" class="purchase-flow order-success" data-purchase-flow aria-labelledby="success-title">
+  <nav class="purchase-breadcrumb" aria-label="Хлебные крошки">
+    <a asp-controller="Home" asp-action="Index">Главная</a><span aria-hidden="true">/</span>
+    <a asp-action="Index">Корзина</a><span aria-hidden="true">/</span>
+    <span aria-current="page">Заказ принят</span>
+  </nav>
+  <div class="order-success__body">
+    <div class="order-success__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" focusable="false">
+        <path pathLength="1" d="m4 12 5 5L20 6" />
+      </svg>
+    </div>
+    <header class="purchase-heading"><h1 id="success-title">Заказ принят</h1></header>
+    <p class="order-success__number">Заказ №@Model.OrderNumber</p>
+    <p class="order-success__next">Мы свяжемся с вами для подтверждения заказа.</p>
+    <div class="order-success__actions">
+      <a class="button purchase-button" asp-controller="Catalog" asp-action="Index">
+        Продолжить покупки <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
+      </a>
+      @if (Model.CanViewOrder)
+      {
+        <a class="purchase-back order-success__link" asp-controller="Cabinet" asp-action="Order" asp-route-publicId="@Model.PublicId">
+          Перейти к заказу <partial name="~/Views/Cabinet/_AccountIcon.cshtml" model='"arrow"' />
+        </a>
+      }
+    </div>
+  </div>
+</section>

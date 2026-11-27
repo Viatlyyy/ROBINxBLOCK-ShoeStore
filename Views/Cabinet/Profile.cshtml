@@ -1,26 +1,68 @@
 @model ShoeStore.Models.CustomerProfileViewModel
+@using System.Security.Claims
 @{
   Layout = "_CabinetLayout";
   ViewData["Title"] = "Профиль";
+  var name = User.FindFirst(ClaimTypes.GivenName)?.Value?.Trim();
 }
-<h2>Контактные данные</h2>
-<form class="customer-profile" asp-action="Profile" method="post" data-customer-profile>
-  @if (TempData["ProfileSaved"] is string message)
-  {
-    <p class="customer-profile__notice" role="status">@message</p>
-  }
-  <div asp-validation-summary="ModelOnly" class="customer-profile__error" role="alert"></div>
-  <label asp-for="DisplayName">Имя и фамилия</label>
-  <input asp-for="DisplayName" maxlength="80" autocomplete="name" required />
-  <span asp-validation-for="DisplayName" class="customer-profile__error"></span>
+<div class="account-banner account-banner--profile">
+  <div class="account-banner__copy">
+    <form id="profile-avatar-form" class="account-avatar-editor" asp-action="UploadAvatar" method="post" enctype="multipart/form-data">
+      <partial name="_AccountAvatar" />
+      <span class="account-avatar-editor__pencil"><partial name="_AccountIcon" model='"pencil"' /></span>
+      <input id="profile-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp"
+             aria-label="Сменить фото профиля" title="Сменить фото профиля" aria-describedby="profile-photo-hint"
+             data-avatar-max-bytes="@ShoeStore.Services.AvatarStore.MaxPhotoBytes" required />
+      <span id="profile-photo-hint" class="sr-only">JPG, PNG или WebP до 5 МБ и 4096 × 4096 пикселей.</span>
+    </form>
+    <div>
+      <strong>@(string.IsNullOrWhiteSpace(name) ? "Покупатель" : name)</strong>
+      @if (!string.IsNullOrWhiteSpace(Model.Email)) { <p>@Model.Email</p> }
+    </div>
+  </div>
+  <partial name="_BannerPhoto" />
+</div>
+@if (TempData["AvatarSaved"] is string avatarNotice)
+{
+  <p class="customer-profile__notice account-avatar-notice" role="status"><partial name="_AccountIcon" model='"check"' /> @avatarNotice</p>
+}
+@if (TempData["AvatarError"] is string avatarError)
+{
+  <p class="account-avatar-notice account-avatar-notice--error" role="alert">@avatarError</p>
+}
+<noscript>
+  <button class="account-action account-avatar-fallback" type="submit" form="profile-avatar-form">Сохранить фото</button>
+</noscript>
+<section class="account-panel account-profile-panel" aria-labelledby="account-profile-heading">
+  <h2 id="account-profile-heading">Личные данные</h2>
+  <form class="customer-profile" asp-action="Profile" method="post" data-customer-profile>
+    @if (TempData["ProfileSaved"] is string message)
+    {
+      <p class="customer-profile__notice" role="status"><partial name="_AccountIcon" model='"check"' /> @message</p>
+    }
+    <div asp-validation-summary="ModelOnly" class="customer-profile__error" role="alert"></div>
 
-  <label for="profile-email">Почта</label>
-  <input id="profile-email" value="@Model.Email" type="email" readonly autocomplete="email" />
-
-  <label asp-for="Phone">Телефон</label>
-  <input asp-for="Phone" type="tel" maxlength="32" autocomplete="tel" />
-  <span asp-validation-for="Phone" class="customer-profile__error"></span>
-
-  <button type="submit" class="account-action account-action--primary">Сохранить изменения</button>
-  <p class="sr-only" role="status" data-profile-progress></p>
-</form>
+    <div class="customer-profile__fields">
+      <div class="customer-profile__field">
+        <label asp-for="DisplayName">Имя и фамилия <span aria-hidden="true">*</span></label>
+        <input asp-for="DisplayName" maxlength="80" autocomplete="name" required aria-describedby="profile-name-error"
+               aria-invalid="@(ViewData.ModelState["DisplayName"]?.Errors.Count > 0 ? "true" : null)" />
+        <span asp-validation-for="DisplayName" id="profile-name-error" class="customer-profile__error"></span>
+      </div>
+      <div class="customer-profile__field">
+        <label for="profile-email">Электронная почта</label>
+        <input id="profile-email" value="@Model.Email" type="email" readonly autocomplete="email" />
+      </div>
+      <div class="customer-profile__field">
+        <label asp-for="Phone">Телефон</label>
+        <input asp-for="Phone" type="tel" maxlength="32" autocomplete="tel" aria-describedby="profile-phone-error"
+               aria-invalid="@(ViewData.ModelState["Phone"]?.Errors.Count > 0 ? "true" : null)" />
+        <span asp-validation-for="Phone" id="profile-phone-error" class="customer-profile__error"></span>
+      </div>
+    </div>
+    <button type="submit" class="account-action account-action--primary">
+      <span data-profile-label>Сохранить изменения</span> <partial name="_AccountIcon" model='"arrow"' />
+    </button>
+    <p class="sr-only" role="status" data-profile-progress></p>
+  </form>
+</section>

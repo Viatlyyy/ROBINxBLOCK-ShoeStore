@@ -18,7 +18,7 @@
     var onFeet = "/images/hero/" + slide.Scene;
     var pair = "/images/hero/" + slide.Pair;
 
-    <article class="hero-slide @(i == 0 ? "is-active" : "")">
+    <article class="hero-slide @(i == 0 ? "is-active" : "")" inert="@(i > 0 ? "inert" : null)" aria-hidden="@(i > 0 ? "true" : null)">
       <div class="hero-media" aria-hidden="true">
         @if (i == 0) { <img class="hero-scene hero-scene--feet" src="@(onFeet + "-960.webp")" srcset="@(onFeet + "-960.webp 960w, " + onFeet + "-1600.webp 1600w")" sizes="100vw" alt="" decoding="async" fetchpriority="high" /> }
         else { <img class="hero-scene hero-scene--feet" data-src="@(onFeet + "-960.webp")" data-srcset="@(onFeet + "-960.webp 960w, " + onFeet + "-1600.webp 1600w")" sizes="100vw" alt="" decoding="async" fetchpriority="low" /> }
@@ -35,7 +35,7 @@
     </article>
   }
 
-  <div class="hero-controls">
+  <div class="hero-controls" data-hero-controls hidden>
     <button class="hero-arrow" type="button" data-hero-prev aria-label="Предыдущая модель">←</button>
     <div class="hero-dots" aria-hidden="true">
       @for (var i = 0; i < slides.Length; i++)
@@ -45,7 +45,7 @@
     </div>
     <button class="hero-arrow" type="button" data-hero-next aria-label="Следующая модель">→</button>
   </div>
-  <div class="hero-progress" aria-label="Индикатор автоматической смены модели"><span></span></div>
+  <div class="hero-progress" data-hero-progress aria-hidden="true" hidden><span></span></div>
 </section>
 
 <section class="content home-catalog" id="catalog" aria-labelledby="catalog-title">
@@ -80,6 +80,8 @@
       </div>
     }
   </div>
+
+  <button class="motion-pause brand-ticker__pause" type="button" data-ticker-pause aria-label="Пауза бегущей строки" aria-pressed="false" hidden>Пауза</button>
 </section>
 
 <section class="content culture-board" aria-label="RONINxBLOCK и культура кроссовок">

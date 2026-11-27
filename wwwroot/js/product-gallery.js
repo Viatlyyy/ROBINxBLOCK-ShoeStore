@@ -57,10 +57,6 @@
     }
     buffer.removeAttribute('src');
     delete buffer.dataset.gallerySource;
-    main.style.removeProperty('opacity');
-    main.style.removeProperty('transform');
-    buffer.style.removeProperty('opacity');
-    buffer.style.removeProperty('transform');
     frame.removeAttribute('aria-busy');
   };
 
@@ -83,7 +79,7 @@
   const changeImage = async source => {
     const currentRequest = ++requestId;
     resetLayers();
-    if (sameSource(main.dataset.gallerySource, source)) return;
+    if (!main.hidden && sameSource(main.dataset.gallerySource, source)) return;
     frame.setAttribute('aria-busy', 'true');
     const loaded = source && (photos ? await photos.prepare(source, 'detail') : await preload(source) && source);
     if (currentRequest !== requestId) return;
@@ -96,7 +92,7 @@
       placeholder.hidden = false;
       return;
     }
-    if (main.hidden || !main.naturalWidth) {
+    if (main.hidden || !main.naturalWidth || !window.storefrontMotion?.canAnimate(main)) {
       display(main, source, loaded);
       frame.dataset.currentSource = source;
       main.hidden = false;
@@ -108,19 +104,20 @@
     frame.dataset.currentSource = source;
     frame.setAttribute('aria-busy', 'true');
 
-    const duration = 720;
-    const easing = 'cubic-bezier(.16, 1, .3, 1)';
-    animations = [
-      main.animate(
-        [{ opacity: 1, transform: 'translateX(0) scale(1)' }, { opacity: 0, transform: 'translateX(-24px) scale(.99)' }],
-        { duration, easing, fill: 'both' }),
-      buffer.animate(
-        [{ opacity: 0, transform: 'translateX(24px) scale(1.01)' }, { opacity: 1, transform: 'translateX(0) scale(1)' }],
-        { duration, easing, fill: 'both' })
-    ];
+    const motion = window.storefrontMotion;
+    const outgoing = motion.animate(main,
+      [{ opacity: 1, transform: 'translateX(0) scale(1)' }, { opacity: 0, transform: 'translateX(-24px) scale(.99)' }],
+      '--motion-gallery', { fill: 'both' });
+    const incoming = motion.animate(buffer,
+      [{ opacity: 0, transform: 'translateX(24px) scale(1.01)' }, { opacity: 1, transform: 'translateX(0) scale(1)' }],
+      '--motion-gallery', { fill: 'both' });
+    animations = [outgoing, incoming].filter(Boolean);
+    if (!outgoing || !incoming) {
+      resetLayers();
+      return;
+    }
     gallery.dataset.activeAnimations = String(animations.length);
-
-    await Promise.allSettled(animations.map(animation => animation.finished));
+    await Promise.all(animations.map(animation => animation.finished));
     if (currentRequest !== requestId) return;
     resetLayers();
   };
@@ -153,6 +150,15 @@
     images = [...(activeGroup?.querySelectorAll('[data-gallery-image]') ?? [])];
     show(images[0]);
   });
+
+  main.addEventListener('error', () => {
+    main.hidden = true;
+    placeholder.hidden = false;
+  });
+  if (main.getAttribute('src') && main.complete && !main.naturalWidth) {
+    main.hidden = true;
+    placeholder.hidden = false;
+  }
 
   main.dataset.gallerySource = main.dataset.photoSource || main.currentSrc || main.getAttribute('src') || '';
   frame.dataset.currentSource = main.dataset.gallerySource;

@@ -1,7 +1,10 @@
 @model ShoeStore.Models.HomePageViewModel
 
+<details class="catalog-filter-panel" open>
+<summary>Фильтры <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
 <form id="catalog-filters" class="catalog-controls" asp-controller="Catalog" asp-action="Index"
       method="get" aria-label="Фильтры и сортировка каталога">
+  <h2>Фильтры</h2>
   <div class="catalog-control">
     <label for="catalog-tag">Товары</label>
     <select id="catalog-tag" name="tag">
@@ -10,7 +13,7 @@
       <option value="popular" selected="@(Model.Selection.Tag == "popular")">Популярное</option>
     </select>
   </div>
-  <div class="catalog-control">
+  <div class="catalog-control catalog-sort">
     <label for="catalog-sort">Сортировка</label>
     <select id="catalog-sort" name="sort">
       <option value="default" selected="@(Model.Selection.Sort == "default")">По умолчанию</option>
@@ -34,3 +37,4 @@
   }
   <button class="catalog-submit" type="submit">Показать</button>
 </form>
+</details>

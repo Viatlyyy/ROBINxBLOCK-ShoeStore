@@ -15,6 +15,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<FavoritesService>();
+builder.Services.AddScoped<AvatarStore>();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {

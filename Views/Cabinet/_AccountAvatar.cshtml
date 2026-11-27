@@ -1,0 +1,16 @@
+@using System.Globalization
+@using System.Security.Claims
+@inject ShoeStore.Services.AvatarStore Avatars
+@{
+  var name = User.FindFirst(ClaimTypes.GivenName)?.Value ?? "";
+  var initials = string.Concat(name.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)
+    .Take(2).Select(part => StringInfo.GetNextTextElement(part))).ToUpperInvariant();
+}
+<span class="account-avatar" aria-hidden="true">
+  @if (await Avatars.HasCurrentAvatarAsync(Context.RequestAborted))
+  {
+    <img src="@Url.Action("Avatar", "Cabinet")" alt="" width="256" height="256" />
+  }
+  else if (initials.Length == 0) { <partial name="_AccountIcon" model='"profile"' /> }
+  else { @initials }
+</span>

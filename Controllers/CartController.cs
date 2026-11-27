@@ -23,6 +23,14 @@ public class CartController(CartService cart, CheckoutService checkout, Applicat
         return View(new CartPageViewModel { Lines = lines });
     }
 
+    [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Count(CancellationToken cancellationToken)
+    {
+        await HttpContext.Session.LoadAsync(cancellationToken);
+        return Json(new { count = CartService.GetCount(HttpContext.Session, initialize: false) });
+    }
+
     [HttpPost, ValidateAntiForgeryToken]
     public async Task<IActionResult> Add(int variantId, int size, int quantity = 1, CancellationToken cancellationToken = default)
     {

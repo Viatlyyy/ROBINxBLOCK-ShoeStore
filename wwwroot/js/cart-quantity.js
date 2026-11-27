@@ -1,5 +1,7 @@
 (() => {
   const cart = document.querySelector('.cart-page');
+  if (!cart || !window.fetch) return;
+  const motion = window.storefrontMotion;
   const list = cart.querySelector('[data-cart-lines]');
   const contents = cart.querySelector('[data-cart-content]');
   const empty = cart.querySelector('[data-cart-empty]');
@@ -11,24 +13,16 @@
   const notice = cart.querySelector('[data-cart-notice]');
   const announcement = cart.querySelector('[data-cart-announcement]');
   const badge = document.querySelector('[data-cart-count]');
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const easing = getComputedStyle(cart).getPropertyValue('--purchase-ease').trim();
   const currency = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
   const money = value => currency.format(value) + ' ₽';
   const queue = [];
   let processing = false;
   let needsRefresh = false;
 
-  function animate(element, frames, duration) {
-    if (!reducedMotion.matches && element.animate) {
-      return element.animate(frames, { duration, easing }).finished.catch(() => {});
-    }
-  }
-
   function updateText(element, text) {
     if (element.textContent === String(text)) return;
     element.textContent = text;
-    animate(element, [{ opacity: .55, transform: 'translateY(3px)' }, { opacity: 1, transform: 'none' }], 190);
+    motion?.animate(element, [{ opacity: .55, transform: 'translateY(3px)' }, { opacity: 1, transform: 'none' }], '--motion-value');
   }
 
   function updateLine(row, state) {
@@ -46,16 +40,25 @@
     updateText(row.querySelector('[data-cart-line-total]'), money(state.total));
   }
 
-  async function removeRows(rows, removed, source) {
-    await Promise.all(removed.map(row => animate(row, [{ opacity: 1 }, { opacity: 0, transform: 'translateX(-6px)' }], 135)));
+  function removeRows(rows, removed, source) {
     const remaining = rows.filter(row => !removed.includes(row));
-    const positions = remaining.map(row => row.getBoundingClientRect().top);
+    const animate = remaining.length && motion?.canAnimate(remaining[0]);
+    const positions = animate ? remaining.map(row => row.getBoundingClientRect().top) : [];
     const focusWasRemoved = removed.some(row => row.contains(document.activeElement));
-    removed.forEach(row => row.remove());
-    remaining.forEach((row, index) => {
-      const shift = positions[index] - row.getBoundingClientRect().top;
-      if (shift) animate(row, [{ transform: 'translateY(' + shift + 'px)' }, { transform: 'none' }], 200);
-    });
+    for (const row of removed) {
+      if (animate) motion.retire(row, '--motion-exit',
+        [{ opacity: 1 }, { opacity: 0, transform: 'translateX(-6px)' }]);
+      else row.remove();
+    }
+    if (animate) {
+      remaining.forEach(motion.settle);
+      const destinations = remaining.map(row => row.getBoundingClientRect().top);
+      remaining.forEach((row, index) => {
+        const shift = positions[index] - destinations[index];
+        if (shift) motion.animate(row, [{ transform: 'translateY(' + shift + 'px)' }, { transform: 'none' }],
+          '--motion-control');
+      });
+    }
     if (focusWasRemoved && remaining.length) {
       const next = rows.slice(rows.indexOf(source) + 1).find(row => remaining.includes(row)) || remaining.at(-1);
       next.querySelector('[data-cart-remove-form] button').focus({ preventScroll: true });
@@ -63,8 +66,8 @@
     return focusWasRemoved;
   }
 
-  async function render(result, source, removing) {
-    const rows = [...list.querySelectorAll('[data-cart-line]')];
+  function render(result, source, removing) {
+    const rows = [...list.querySelectorAll('[data-cart-line]:not([data-motion-exit])')];
     const currentKeys = new Set(rows.map(row => row.dataset.cartKey));
     const byKey = new Map(result.lines.map(line => [line.variantId + ':' + line.size, line]));
     if ([...byKey.keys()].some(key => !currentKeys.has(key))) {
@@ -77,7 +80,7 @@
     const previousQuantity = Number(source.querySelector('[data-cart-line-quantity]').textContent);
     const selected = byKey.get(source.dataset.cartKey);
     const removed = rows.filter(row => !byKey.has(row.dataset.cartKey));
-    const removedFocus = removed.length && await removeRows(rows, removed, source);
+    const removedFocus = removed.length && removeRows(rows, removed, source);
 
     for (const row of rows) {
       const state = byKey.get(row.dataset.cartKey);
@@ -87,9 +90,12 @@
     updateText(label, result.itemsLabel);
     updateText(subtotal, money(result.total));
     updateText(total, money(result.total));
-    badge.textContent = result.count;
-    badge.classList.toggle('is-visible', result.count > 0);
-    if (result.count) animate(badge, [{ scale: '.85' }, { scale: '1' }], 190);
+    if (window.storefrontCartBadge) window.storefrontCartBadge.update(result.count);
+    else {
+      badge.textContent = result.count;
+      badge.classList.toggle('is-visible', result.count > 0);
+    }
+    if (result.count) motion?.animate(badge, [{ scale: '.85' }, { scale: '1' }], '--motion-value');
 
     contents.hidden = !result.count;
     empty.hidden = Boolean(result.count);
@@ -112,14 +118,14 @@
     try {
       while (queue.length) {
         const { form, submitter, data, removing } = queue.shift();
-        if (form.isConnected && !submitter.disabled) {
+        if (form.isConnected && !form.closest('[data-motion-exit]') && !submitter.disabled) {
           const response = await fetch(form.action, {
             method: 'POST',
             body: data,
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
           });
           if (!response.ok) throw new Error('Cart update failed');
-          await render(await response.json(), form.closest('[data-cart-line]'), removing);
+          render(await response.json(), form.closest('[data-cart-line]'), removing);
         }
         if (!queue.some(item => item.form === form)) form.removeAttribute('aria-busy');
       }
@@ -139,7 +145,7 @@
 
   cart.addEventListener('submit', event => {
     const form = event.target.closest('[data-cart-quantity-form], [data-cart-remove-form]');
-    if (!form || !event.submitter) return;
+    if (!form || !event.submitter || form.closest('[data-motion-exit]')) return;
     event.preventDefault();
     if (needsRefresh) {
       error.querySelector('a').focus();

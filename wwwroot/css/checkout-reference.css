@@ -91,7 +91,7 @@
   display: block;
   min-width: 0;
   color: #494949;
-  transition: color var(--purchase-normal) ease;
+  transition: color var(--motion-control) ease;
 }
 
 .checkout-field > .checkout-field__control { margin-top: 3px; }
@@ -125,7 +125,7 @@
   background: #fff;
   color: var(--purchase-ink);
   font: 500 1.0625rem/1.4 Inter, Arial, sans-serif;
-  transition: border-color var(--purchase-normal) ease, box-shadow var(--purchase-normal) ease;
+  transition: border-color var(--motion-control) ease, box-shadow var(--motion-control) ease;
   scroll-margin-block: 7rem 2rem;
 }
 
@@ -201,8 +201,8 @@
   line-height: 1.3;
   font-weight: 700;
   overflow-wrap: anywhere;
-  transition: background-color var(--purchase-normal) ease, border-color var(--purchase-normal) ease,
-    color var(--purchase-normal) ease, transform var(--purchase-fast) var(--purchase-ease);
+  transition: background-color var(--motion-control) ease, border-color var(--motion-control) ease,
+    color var(--motion-control) ease, transform var(--motion-press) var(--motion-ease-soft);
 }
 
 .delivery-option span::before, .checkout-payment span {
@@ -212,8 +212,8 @@
   height: 21px;
   border: 2px solid #767676;
   border-radius: 50%;
-  transition: background-color var(--purchase-normal) ease, border-color var(--purchase-normal) ease,
-    box-shadow var(--purchase-normal) ease;
+  transition: background-color var(--motion-control) ease, border-color var(--motion-control) ease,
+    box-shadow var(--motion-control) ease;
 }
 
 .delivery-option input:checked + span { border-color: #111; background: #111; color: #fff; }
@@ -282,18 +282,16 @@
   font-size: 1rem;
 }
 
-.checkout-spinner { width: 17px; height: 17px; flex: 0 0 17px; border: 2px solid #ffffff60; border-top-color: #fff; border-radius: 50%; animation: checkout-spin 650ms linear infinite; }
+.checkout-spinner { width: 17px; height: 17px; flex: 0 0 17px; border: 2px solid #ffffff60; border-top-color: #fff; border-radius: 50%; animation: checkout-spin var(--motion-spinner) linear infinite; }
 @keyframes checkout-spin { to { transform: rotate(360deg); } }
 
-@media (prefers-reduced-motion: no-preference) {
-  .checkout-panel .field-validation-error, .checkout-errors.validation-summary-errors {
-    animation: checkout-feedback var(--purchase-normal) var(--purchase-ease) both;
-  }
+:is(.checkout-panel .field-validation-error, .checkout-errors.validation-summary-errors) {
+  animation: checkout-feedback var(--motion-control) var(--motion-ease-soft) both;
+}
 
-  @keyframes checkout-feedback {
-    from { opacity: .25; transform: translateY(4px); }
-    to { opacity: 1; transform: none; }
-  }
+@keyframes checkout-feedback {
+  from { opacity: .25; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -336,9 +334,7 @@
   .checkout-summary__cost { grid-area: cost; text-align: start; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .delivery-option input:active + span { transform: none; }
-}
+
 
 @media (forced-colors: active) {
   .delivery-option input {
@@ -382,7 +378,10 @@
 }
 
 .order-success__icon svg { width: 44%; height: auto; }
-.order-success__icon path { stroke-dasharray: 23; animation: checkout-check 360ms var(--purchase-ease) both; }
+.order-success__icon path { stroke-dasharray: 23; }
+html[data-motion-entry] .order-success__icon path {
+  animation: checkout-check var(--motion-mark) var(--motion-ease-soft);
+}
 @keyframes checkout-check { from { stroke-dashoffset: 23; } to { stroke-dashoffset: 0; } }
 
 .order-success .purchase-heading { margin-bottom: 11px; }

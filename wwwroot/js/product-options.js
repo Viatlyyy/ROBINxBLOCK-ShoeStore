@@ -12,7 +12,6 @@
     form.querySelector('[data-cart-error]').hidden = true;
     update(1, false);
   });
-  let pulseTimer;
 
   function update(value, animate) {
     const size = form.querySelector('input[name="size"]:checked');
@@ -23,10 +22,8 @@
     decrease.disabled = quantity <= 1;
     increase.disabled = quantity >= maximum;
     if (animate) {
-      clearTimeout(pulseTimer);
-      picker.classList.remove('is-changing');
-      requestAnimationFrame(() => picker.classList.add('is-changing'));
-      pulseTimer = setTimeout(() => picker.classList.remove('is-changing'), 260);
+      window.storefrontMotion?.animate(input, [{ scale: '1' }, { scale: '1.16' }, { scale: '1' }],
+        '--motion-expand');
     }
   }
 

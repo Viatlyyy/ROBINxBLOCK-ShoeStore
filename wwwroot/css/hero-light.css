@@ -36,7 +36,7 @@
 }
 .hero-slide.is-active .hero-photo > img { animation: none; }
 .hero-carousel.has-transitioned .hero-slide.is-active .hero-photo > img {
-  animation: hero-shoe-in 1.45s cubic-bezier(.16,.8,.25,1) both;
+  animation: hero-shoe-in var(--motion-hero-shoe) var(--motion-ease-hero-shoe) both;
 }
 
 .hero-slide .hero-model {
@@ -65,10 +65,7 @@
 }
 
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-slide { transition-duration: 1.7s !important; }
-  .hero-carousel.has-transitioned .hero-slide.is-active .hero-photo > img { animation-duration: 1.45s !important; }
-}
+
 
 
 .hero-carousel { height: 560px; background: #f4f4f2; }
@@ -89,7 +86,7 @@
   object-position: center;
   opacity: 0;
   transform: scale(1.035);
-  transition: opacity 1.05s cubic-bezier(.22,.75,.25,1), transform 5.8s cubic-bezier(.22,.75,.25,1);
+  transition: opacity var(--motion-hero-scene) var(--motion-ease-hero), transform var(--motion-hero-pan) var(--motion-ease-hero);
 }
 
 .hero-carousel:not(.has-transitioned) .hero-slide.is-active .hero-scene--feet {
@@ -156,7 +153,7 @@
 }
 .hero-slide .hero-model span { color: #575757; }
 .hero-slide.is-active .hero-model {
-  animation: hero-model-reveal .95s .32s cubic-bezier(.16,.84,.25,1) both !important;
+  animation: hero-model-reveal var(--motion-hero-label) var(--motion-hero-label-delay) var(--motion-ease-accent) backwards;
   transform-origin: left center;
 }
 @keyframes hero-model-reveal {
@@ -166,14 +163,10 @@
 }
 .hero-controls { z-index: 4; }
 .hero-progress { z-index: 4; overflow: hidden; }
-.hero-progress span { width: 100%; transform: scaleX(0); transform-origin: left; animation: none !important; }
+.hero-progress span { width: 100%; transform: scaleX(0); transform-origin: left; animation: none; }
 
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-scene { transition: opacity 1.05s cubic-bezier(.22,.75,.25,1), transform 5.8s cubic-bezier(.22,.75,.25,1) !important; }
-  .hero-carousel:not(.has-transitioned) .hero-slide.is-active .hero-scene--feet { transition: none !important; }
-  .hero-slide.is-active .hero-model { animation: hero-model-reveal .95s .32s cubic-bezier(.16,.84,.25,1) both !important; }
-}
+
 
 @media (max-width: 760px) {
   .hero-carousel { height: 650px; }
@@ -187,4 +180,22 @@
   }
   .hero-slide .hero-model { top: 20px; right: 20px; left: auto; }
   .hero-slide .hero-note { display: none; }
+}
+
+.hero-slide:not(.is-active) { visibility: hidden !important; transition-property: opacity, transform, visibility; transition-duration: var(--motion-hero-slide), var(--motion-hero-slide), 0ms; }
+.hero-slide.is-active { transition-property: opacity, transform, visibility; transition-duration: var(--motion-hero-slide), var(--motion-hero-slide), 0ms; }
+.hero-slide:not(.is-active) { transition-delay: 0ms, 0ms, var(--motion-hero-slide); }
+.hero-scene[hidden] { display: none; }
+
+.hero-progress span {
+  animation: hero-progress var(--motion-hero-cycle) linear forwards;
+  animation-play-state: paused;
+}
+.hero-carousel.is-playing .hero-progress span { animation-play-state: running; }
+@keyframes hero-progress { to { transform: scaleX(1); } }
+
+@media (max-width: 390px) {
+  .hero-slide .hero-copy,
+  .hero-slide:nth-of-type(2) .hero-copy,
+  .hero-slide:nth-of-type(3) .hero-copy { padding-top: 100px; }
 }

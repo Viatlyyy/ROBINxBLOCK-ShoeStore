@@ -103,15 +103,15 @@
 
 .cart-reference-item button {
   cursor: pointer;
-  transition: background-color var(--purchase-normal) ease, color var(--purchase-normal) ease,
-    transform var(--purchase-fast) var(--purchase-ease);
+  transition: background-color var(--motion-control) ease, color var(--motion-control) ease,
+    transform var(--motion-press) var(--motion-ease-soft);
 }
 
 .cart-reference-item button:disabled { color: #8b8b8b; cursor: default; }
 .cart-reference-item button:not(:disabled):active { transform: scale(.94); }
 
 .cart-reference-item form {
-  transition: opacity var(--purchase-fast) ease;
+  transition: opacity var(--motion-press) ease;
 }
 
 .cart-reference-item form[aria-busy="true"] { opacity: .62; }
@@ -177,6 +177,4 @@
   .cart-reference-item__details h3 { margin-bottom: 7px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cart-reference-item__image:hover img, .cart-reference-item button:active { transform: none; }
-}
+

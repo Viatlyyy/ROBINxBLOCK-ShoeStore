@@ -1,0 +1,55 @@
+.motion-pause {
+  min-height: 26px;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  padding: 4px 7px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font: 600 10px Inter, Arial, sans-serif;
+}
+.motion-pause[aria-pressed="true"] { background: #111; color: #fff; }
+
+.storefront-shell :is(a[href], button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.storefront-shell :is(.header, .account-menu__panel) :is(a, button, select):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+.storefront-shell .quantity-picker button:focus-visible { outline-offset: -4px; }
+.storefront-shell :is([data-hero-controls], [data-hero-progress],
+  [data-ticker-pause], [data-account-menu-trigger], [data-account-menu-fallback])[hidden] { display: none; }
+
+@media (hover: hover) and (pointer: fine) {
+  .button:not(:disabled, [aria-disabled="true"]):active,
+  .light-button:not(:disabled, [aria-disabled="true"]):active { scale: var(--motion-press-scale); }
+}
+
+@media (forced-colors: active) {
+  .storefront-shell :is(a[href], button, input, select, textarea, summary):focus-visible {
+    outline-color: Highlight;
+  }
+  .motion-pause, .account-menu__panel { border-color: ButtonText; }
+  .motion-pause[aria-pressed="true"], .favorite-button[aria-pressed="true"],
+  .color-swatch[aria-pressed="true"], .sizes input:checked + span {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+  .header-cart-count.is-visible { border-color: ButtonText; }
+  .brand-ticker::before, .brand-ticker::after { display: none; }
+  .hero-slide .hero-copy::before { background: Canvas; mask-image: none; width: 100%; }
+  .hero-slide .hero-copy { color: CanvasText; }
+}
+
+:is([data-cart-lines], [data-favorites-list]) { position: relative; }
+
+.motion-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,6 +1,15 @@
-.header { transition: opacity .9s cubic-bezier(.22,.8,.25,1), transform .9s cubic-bezier(.22,.8,.25,1); }
-main > * { transition: opacity 1.12s cubic-bezier(.22,.8,.25,1); }
-body.is-page-entering:not([data-page-entry-from-purchase]) .header { opacity: 0; transform: translateY(-16px); }
-body.is-page-entering main > * { opacity: 0; }
-main > *:nth-child(2) { transition-delay: .14s; }
-@media (prefers-reduced-motion: reduce) { .header, main > * { transition-duration: 1.12s !important; transition-timing-function: cubic-bezier(.16,1,.3,1) !important; } }
+/* Entry is an effect on otherwise visible content. The shared header and footer stay in place. */
+html[data-motion-entry] main > :not(.purchase-flow, .customer-account, .account-page, .brand-ticker,
+  .home-promotions, .culture-board) {
+  animation: page-enter var(--motion-page) var(--motion-ease-out);
+}
+
+html[data-motion-entry] main > .home-catalog {
+  animation-delay: var(--motion-stagger);
+  animation-fill-mode: backwards;
+}
+
+@keyframes page-enter {
+  from { opacity: .55; translate: 0 var(--motion-enter-shift); }
+  to { opacity: 1; translate: none; }
+}

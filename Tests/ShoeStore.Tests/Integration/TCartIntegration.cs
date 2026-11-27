@@ -105,6 +105,23 @@ public class TCartIntegration
             ["quantity"] = quantity.ToString(), ["change"] = change.ToString()
         }));
 
+    [TestMethod]
+    public async Task CartCount_ReadsOnlyTheCurrentSessionAndPreventsCaching()
+    {
+        using var added = await Post("Add", 37, quantity: 2);
+        Assert.AreEqual(HttpStatusCode.OK, added.StatusCode);
+
+        using var response = await client.GetAsync("/Cart/Count");
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        Assert.IsTrue(response.Headers.CacheControl?.NoStore == true);
+        var badge = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.AreEqual(2, badge.GetProperty("count").GetInt32());
+
+        using var separateSession = app.CreateClient();
+        var emptyBadge = await separateSession.GetFromJsonAsync<JsonElement>("/Cart/Count");
+        Assert.AreEqual(0, emptyBadge.GetProperty("count").GetInt32());
+    }
+
     private const string CheckoutUserId = "cart-test-customer";
 
     private async Task SignInForCheckoutAsync()

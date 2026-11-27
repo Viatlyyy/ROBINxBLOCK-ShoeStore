@@ -26,6 +26,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="~/js/page-entry.js" asp-append-version="true"></script>
   <title>@ViewData["Title"] — RONINxBLOCK</title>
   <link rel="preload" href="~/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin />
   @if (isHome)
@@ -33,6 +34,7 @@
     <link rel="preload" as="image" href="/images/hero/9060-urban-feet-v6-960.webp" imagesrcset="/images/hero/9060-urban-feet-v6-960.webp 960w, /images/hero/9060-urban-feet-v6-1600.webp 1600w" imagesizes="100vw" fetchpriority="high" />
   }
   <link rel="stylesheet" href="~/css/fonts.css" asp-append-version="true" />
+  <link rel="stylesheet" href="~/css/motion-tokens.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/storefront.css" asp-append-version="true" />
   <link rel="stylesheet" href="~/css/placeholders.css" asp-append-version="true" />
@@ -62,8 +64,7 @@
   @if (isCartIndex || isOrderPage)
   {
     <link rel="stylesheet" href="~/css/purchase-flow.css" asp-append-version="true" />
-    <link rel="expect" href="#purchase-content" blocking="render" />
-    <script src="~/js/purchase-motion.js" asp-append-version="true" data-purchase-root="@Url.Action("Index", "Cart")"></script>
+    <script src="~/js/purchase-motion.js" asp-append-version="true"></script>
   }
   @if (isCartIndex) { <link rel="stylesheet" href="~/css/cart-reference.css" asp-append-version="true" /> }
   @if (isHome || isCatalog || isCartIndex || isProductDetails || isCabinet)
@@ -78,15 +79,11 @@
   @if (isCabinet)
   {
     <link rel="stylesheet" href="~/css/customer-account.css" asp-append-version="true" />
-    <link rel="expect" href="#account-content" blocking="render" />
-    <script src="~/js/customer-account-motion.js" asp-append-version="true" data-cabinet-root="@Url.Action("Index", "Cabinet")"></script>
+    <script src="~/js/customer-account-motion.js" asp-append-version="true"></script>
   }
+  <link rel="stylesheet" href="~/css/motion-policy.css" asp-append-version="true" />
 </head>
 <body class="storefront-shell @(isCabinet ? "customer-account-page" : null)">
-  @if (!isCabinet && !isCartIndex && !isOrderPage)
-  {
-    <script src="~/js/page-intro.js" asp-append-version="true" data-purchase-root="@(isHome || isCatalog || isProductDetails ? Url.Action("Index", "Cart") : null)"></script>
-  }
   <header class="header">
     <a class="logo" asp-controller="Home" asp-action="Index">RONIN<span>xBLOCK</span></a>
     <nav aria-label="Основная навигация">
@@ -97,7 +94,7 @@
     <div class="header-actions">
       <a class="header-icon-button" asp-controller="Cart" asp-action="Index" aria-label="Корзина" title="Корзина">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 4.5h2l1.6 10.1h10.3l2-7.3H6.2M8 19a1.2 1.2 0 1 0 0 2.4A1.2 1.2 0 0 0 8 19Zm8.2 0a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 0 0 0-2.4Z" /></svg>
-        <span class="header-cart-count @(cartCount>0?"is-visible":"")" data-cart-count>@cartCount</span>
+        <span class="header-cart-count @(cartCount>0?"is-visible":"")" data-cart-count data-cart-count-url="@Url.Action("Count", "Cart")">@cartCount</span>
       </a>
       @if (User.Identity?.IsAuthenticated == true)
       {
@@ -106,14 +103,15 @@
         displayName = string.IsNullOrWhiteSpace(displayName) ? "Пользователь" : displayName.Trim();
         var avatarLetter = System.Globalization.StringInfo.GetNextTextElement(displayName).ToUpperInvariant();
         <div class="account-menu" data-account-menu>
-          <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger>
+          <button class="account-menu__trigger" type="button" aria-label="Открыть меню аккаунта" aria-haspopup="true" aria-expanded="false" data-account-menu-trigger hidden>
             @if (await Avatars.HasCurrentAvatarAsync(Context.RequestAborted))
             {
               <img src="@Url.Action("Avatar", "Cabinet")" alt="" width="32" height="32" />
             }
             else { @avatarLetter }
           </button>
-          <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel>
+          <a class="account-menu__fallback" asp-controller="Cabinet" asp-action="Index" data-account-menu-fallback>Кабинет</a>
+          <div class="account-menu__panel" role="menu" aria-label="Меню аккаунта" data-account-menu-panel inert>
             <p class="account-menu__email">@displayName</p>
             <a asp-controller="Cabinet" asp-action="Index" role="menuitem">Личный кабинет</a>
             @* Form Tag Helper добавит токен для POST-выхода; ссылка GET сессию не завершает. *@
@@ -160,6 +158,8 @@
     </div>
     <div class="store-footer__bottom"><span>© @DateTime.Now.Year RONINxBLOCK</span></div>
   </footer>
+  <script src="~/js/motion-runtime.js" asp-append-version="true"></script>
+  <script src="~/js/cart-badge.js" asp-append-version="true"></script>
   @if (User.Identity?.IsAuthenticated == true) { <script src="~/js/account-menu.js" asp-append-version="true"></script> }
   @if (isAccountEntry) { <script src="~/js/account-form.js" asp-append-version="true"></script> }
   <script src="~/js/smooth-scroll.js" asp-append-version="true"></script>

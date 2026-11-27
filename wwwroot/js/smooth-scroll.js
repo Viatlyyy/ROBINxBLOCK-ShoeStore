@@ -1,5 +1,6 @@
 (() => {
-  if (window.matchMedia('(pointer: coarse)').matches) return;
+  if (!window.requestAnimationFrame) return;
+  const pointer = window.matchMedia?.('(hover: hover) and (pointer: fine)');
 
   const root = document.scrollingElement || document.documentElement;
   let target = window.scrollY;
@@ -8,7 +9,6 @@
   let measureFrame = 0;
   let previousTime = 0;
   let animationDeadline = 0;
-  root.style.scrollBehavior = 'auto';
 
   const clamp = value => Math.max(0, Math.min(limit, value));
   const measure = () => {
@@ -46,11 +46,16 @@
   const render = timestamp => {
     const current = window.scrollY;
     const distance = target - current;
-    if (Math.abs(distance) < .5 || timestamp >= animationDeadline) {
+    if (document.hidden || !pointer?.matches) {
+      stop();
+      return;
+    }
+    if (Math.abs(distance) <= 1 || timestamp >= animationDeadline) {
+      window.scrollTo(0, target);
       frame = 0;
       previousTime = 0;
       animationDeadline = 0;
-      target = current;
+      target = window.scrollY;
       return;
     }
     const elapsed = Math.min(Math.max(timestamp - (previousTime || timestamp - 16.667), 1), 50);
@@ -62,7 +67,10 @@
 
   measure();
   window.addEventListener('wheel', event => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if (document.hidden || !pointer?.matches || !event.cancelable ||
+        event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+        event.target.closest?.('input, select, textarea, [contenteditable], dialog')) return;
+    if (!frame) measure();
     const delta = deltaOf(event);
     if (Math.abs(delta) < .25 || !limit || nestedScrollerCanMove(event.target, delta)) return;
     const current = window.scrollY;
@@ -81,6 +89,10 @@
   window.addEventListener('pointerdown', stop, { passive: true });
   window.addEventListener('blur', stop, { passive: true });
   window.addEventListener('resize', scheduleMeasure, { passive: true });
-  if ('ResizeObserver' in window) new ResizeObserver(scheduleMeasure).observe(document.body);
+  try {
+    if (typeof ResizeObserver === 'function') new ResizeObserver(scheduleMeasure).observe(document.body);
+  } catch { /* Resize and scroll can still run normally. */ }
+  window.addEventListener('pagehide', stop);
+  window.addEventListener('pageshow', measure);
   document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
 })();

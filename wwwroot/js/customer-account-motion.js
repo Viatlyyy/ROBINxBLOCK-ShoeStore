@@ -1,32 +1,7 @@
 (() => {
-  const root = document.documentElement;
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   let avatarUploadPending = false;
-
-  const cabinetPath = new URL(document.currentScript.dataset.cabinetRoot, location.href)
-    .pathname.toLowerCase().replace(/\/$/, '');
-
-  window.addEventListener('pageswap', event => {
-    const transition = event.viewTransition;
-    if (!transition) return;
-    transition.ready.catch(() => {});
-
-    const destination = event.activation?.entry?.url;
-    const path = destination ? new URL(destination).pathname.toLowerCase().replace(/\/$/, '') : '';
-    const isCabinet = path === cabinetPath ||
-      ["/profile", "/orders", "/favorites"].some(section => path === cabinetPath + section) ||
-      path.startsWith(cabinetPath + '/orders/');
-    if (!isCabinet || avatarUploadPending) transition.skipTransition();
-  });
-
-  window.addEventListener('pagereveal', event => {
-    const transition = event.viewTransition;
-    root.classList.toggle('account-navigation-transition', Boolean(transition));
-    transition?.ready.catch(() => root.classList.remove('account-navigation-transition'));
-  });
-
   function markMissingPhoto(image) {
-    image.parentElement.setAttribute('data-photo-unavailable', '');
+    image.parentElement?.setAttribute('data-photo-unavailable', '');
   }
 
   document.addEventListener('error', event => {
@@ -44,8 +19,6 @@
     if (controls) {
       const slides = [...document.querySelectorAll('[data-recommendation]')];
       const buttons = [...controls.querySelectorAll('button')];
-      const duration = parseFloat(getComputedStyle(root).getPropertyValue('--account-normal'));
-      const easing = getComputedStyle(root).getPropertyValue('--account-ease').trim();
       let selected = 0;
       let animation;
       slides.forEach((slide, index) => {
@@ -66,10 +39,8 @@
         slide.classList.remove('is-inactive');
         slide.inert = false;
         buttons[selected].setAttribute('aria-pressed', 'true');
-        if (!reducedMotion.matches && slide.animate) {
-          animation = slide.animate([{ opacity: 0, translate: '0 6px' }, { opacity: 1, translate: 'none' }],
-            { duration, easing });
-        }
+        animation = window.storefrontMotion?.animate(slide,
+          [{ opacity: .5, translate: '0 6px' }, { opacity: 1, translate: 'none' }], '--motion-control');
       });
     }
 

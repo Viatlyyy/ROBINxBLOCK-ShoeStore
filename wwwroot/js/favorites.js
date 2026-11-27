@@ -2,7 +2,7 @@
   const feedback = document.querySelector('[data-favorite-announcement]');
   const errorFeedback = document.querySelector('[data-favorite-error]');
   let failedProduct;
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const motion = window.storefrontMotion;
   const here = () => location.pathname + location.search + location.hash;
   const revisionKey = 'storefront:favorites-revision';
   let revision = readRevision();
@@ -44,25 +44,15 @@
     return url.href;
   }
 
-  const moves = new WeakMap();
-
-  async function removeFromGrid(card, grid, moveFocus) {
-    const canAnimate = !reducedMotion.matches && typeof card.animate === 'function';
-    const motion = canAnimate ? getComputedStyle(document.documentElement) : null;
-    const duration = motion ? parseFloat(motion.getPropertyValue('--account-normal')) : 0;
-    const easing = motion?.getPropertyValue('--account-ease').trim();
-    if (canAnimate) {
-      await card.animate(
-        [{ opacity: 1, scale: 1 }, { opacity: 0, scale: .97 }],
-        { duration, easing, fill: 'forwards' }
-      ).finished.catch(() => {});
-    }
-
-    const neighbors = [card.nextElementSibling, card.previousElementSibling, ...grid.children];
-    const remaining = [...grid.children].filter(item => item !== card);
-    const before = canAnimate ? remaining.map(item => item.getBoundingClientRect()) : [];
+  function removeFromGrid(card, grid, moveFocus) {
+    const remaining = [...grid.children].filter(item => item !== card && !item.hasAttribute('data-motion-exit'));
+    const neighbors = [card.nextElementSibling, card.previousElementSibling, ...remaining]
+      .filter(item => remaining.includes(item));
+    const animate = remaining.length && motion?.canAnimate(card);
+    const before = animate ? remaining.map(item => item.getBoundingClientRect()) : [];
     const focusWasInCard = card.contains(document.activeElement);
-    card.remove();
+    if (animate) motion.retire(card, '--motion-control', [{ opacity: 1, scale: 1 }, { opacity: 0, scale: .97 }]);
+    else card.remove();
 
     const content = grid.closest('#account-content');
     const count = content.querySelector('[data-favorites-count]');
@@ -72,15 +62,15 @@
     if (remaining.length === 0) {
       grid.hidden = true;
       empty.hidden = false;
-    } else if (canAnimate) {
-      remaining.forEach(item => moves.get(item)?.cancel());
+    } else if (animate) {
+      remaining.forEach(motion.settle);
       const after = remaining.map(item => item.getBoundingClientRect());
       remaining.forEach((item, index) => {
         const x = before[index].left - after[index].left;
         const y = before[index].top - after[index].top;
         if (x || y) {
-          moves.set(item, item.animate([{ translate: x + 'px ' + y + 'px' }, { translate: 'none' }],
-            { duration, easing }));
+          motion.animate(item, [{ translate: x + 'px ' + y + 'px' }, { translate: 'none' }],
+            '--motion-control');
         }
       });
     }
@@ -98,7 +88,7 @@
 
   document.addEventListener('submit', async event => {
     const form = event.target.closest('[data-favorite-form]');
-    if (!form) return;
+    if (!form || form.closest('[data-motion-exit]')) return;
     form.elements.returnUrl.value = here();
     if (!window.fetch) return;
     event.preventDefault();
@@ -140,10 +130,10 @@
       const card = form.closest('[data-product-card]');
       const grid = card?.closest('[data-favorites-list]');
       if (grid && !result.isFavorite) {
-        await removeFromGrid(card, grid, hadFocus);
-      } else if (!reducedMotion.matches) {
-        button.classList.add('is-favorite-pulsing');
-        setTimeout(() => button.classList.remove('is-favorite-pulsing'), 260);
+        removeFromGrid(card, grid, hadFocus);
+      } else {
+        motion?.animate(button.querySelector('svg'), [{ scale: '1' }, { scale: '1.27' }, { scale: '1' }],
+          '--motion-menu');
       }
       if (feedback) feedback.textContent = result.isFavorite ? 'Товар добавлен в избранное.' : 'Товар убран из избранного.';
     } catch (error) {

@@ -1,17 +1,5 @@
-@media (prefers-reduced-motion: no-preference) {
-  @view-transition { navigation: auto; }
+html[data-motion-entry] .purchase-flow { animation: purchase-enter var(--motion-reveal) var(--motion-ease-soft); }
 
-  .purchase-flow { animation: purchase-enter var(--purchase-reveal) var(--purchase-ease) both; }
-  .purchase-has-transition .purchase-flow { animation: none; }
-
-  .purchase-has-transition .purchase-flow,
-  .purchase-transition-ready .purchase-flow { view-transition-name: purchase-flow; }
-  ::view-transition-group(purchase-flow) { animation: none; }
-  .purchase-document::view-transition-old(root) { animation: none; opacity: 0; }
-  .purchase-document::view-transition-new(root) { animation: none; }
-  ::view-transition-old(purchase-flow) { animation: purchase-exit 160ms ease both; }
-  ::view-transition-new(purchase-flow) { animation: purchase-enter 280ms cubic-bezier(.22, 1, .36, 1) both; }
-}
 
 .purchase-flow {
   --purchase-ink: #111;
@@ -19,10 +7,6 @@
   --purchase-line: #e5e5e5;
   --purchase-surface: #f5f5f5;
   --purchase-radius: 6px;
-  --purchase-fast: 120ms;
-  --purchase-normal: 200ms;
-  --purchase-reveal: 280ms;
-  --purchase-ease: cubic-bezier(.22, 1, .36, 1);
   width: min(1480px, calc(100% - clamp(36px, 8vw, 128px)));
   margin-inline: auto;
   padding-block: clamp(23px, 2.4vw, 42px) clamp(52px, 5vw, 88px);
@@ -151,8 +135,8 @@ main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer .store-footer__botto
   text-align: center;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background-color var(--purchase-normal) ease, border-color var(--purchase-normal) ease,
-    transform var(--purchase-fast) var(--purchase-ease), opacity var(--purchase-normal) ease;
+  transition: background-color var(--motion-control) ease, border-color var(--motion-control) ease,
+    transform var(--motion-press) var(--motion-ease-soft), opacity var(--motion-control) ease;
 }
 
 .purchase-summary .purchase-button { width: 100%; }
@@ -167,7 +151,7 @@ main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer .store-footer__botto
   flex: 0 0 auto;
   width: 19px;
   height: 19px;
-  transition: transform var(--purchase-normal) var(--purchase-ease);
+  transition: transform var(--motion-control) var(--motion-ease-soft);
 }
 
 .purchase-back {
@@ -203,7 +187,7 @@ main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer .store-footer__botto
   height: 100%;
   min-height: 0;
   object-fit: contain;
-  transition: transform var(--purchase-reveal) var(--purchase-ease);
+  transition: transform var(--motion-reveal) var(--motion-ease-soft);
 }
 
 .purchase-notice {
@@ -236,15 +220,8 @@ main:has(> :is(.cart-page, .checkout-page)) ~ .store-footer .store-footer__botto
 }
 
 @keyframes purchase-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: .55; translate: 0 var(--motion-enter-shift); }
+  to { opacity: 1; translate: none; }
 }
 
-@keyframes purchase-exit {
-  to { opacity: 0; transform: translateY(-5px); }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .purchase-flow *, .purchase-flow *::before { animation: none !important; transition: none !important; }
-  .purchase-flow .purchase-button:active, .purchase-flow :hover > .account-icon { transform: none; }
-}

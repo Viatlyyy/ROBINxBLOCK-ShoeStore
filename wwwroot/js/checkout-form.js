@@ -1,5 +1,6 @@
 (() => {
   const form = document.querySelector('[data-checkout-form]');
+  if (!form) return;
   const city = form.querySelector('[data-delivery-city]');
   const address = form.querySelector('[data-delivery-address]');
   const fields = form.querySelector('[data-delivery-fields]');
@@ -8,8 +9,6 @@
   const arrow = submit.querySelector('svg');
   const spinner = submit.querySelector('.checkout-spinner');
   const progress = form.querySelector('[data-checkout-progress]');
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-  const easing = getComputedStyle(form).getPropertyValue('--purchase-ease').trim();
   let addressAnimation;
   let sending = false;
   form.setAttribute('data-delivery-enhanced', '');
@@ -23,7 +22,8 @@
     const selected = form.querySelector('[data-delivery-option]:checked')?.dataset.deliveryOption;
     const isCourier = selected === 'courier';
     const needsCity = isCourier || selected === 'collection';
-    const previousHeight = fields.getBoundingClientRect().height;
+    const animateHeight = animate && window.storefrontMotion?.canAnimate(fields);
+    const previousHeight = animateHeight ? fields.getBoundingClientRect().height : 0;
     addressAnimation?.cancel();
 
     setVisible(city, needsCity);
@@ -32,11 +32,11 @@
     form.elements.Street.required = isCourier;
     form.elements.House.required = isCourier;
 
-    const height = fields.getBoundingClientRect().height;
-    if (animate && !reducedMotion.matches && fields.animate && height !== previousHeight) {
-      addressAnimation = fields.animate(
+    const height = animateHeight ? fields.getBoundingClientRect().height : 0;
+    if (height !== previousHeight) {
+      addressAnimation = window.storefrontMotion.animate(fields,
         [{ height: previousHeight + 'px', overflow: 'clip' }, { height: height + 'px', overflow: 'clip' }],
-        { duration: 260, easing }
+        '--motion-expand'
       );
     }
   }
@@ -108,9 +108,6 @@
     setPending(false);
   });
 
-  reducedMotion.addEventListener('change', () => {
-    if (reducedMotion.matches) addressAnimation?.cancel();
-  });
 
   for (const input of form.querySelectorAll('.input-validation-error')) input.setAttribute('aria-invalid', 'true');
   const error = form.querySelector('.validation-summary-errors') ||

@@ -4,105 +4,146 @@
 
   const slides = [...root.querySelectorAll('.hero-slide')];
   const dots = [...root.querySelectorAll('[data-hero-dot]')];
-  const progress = root.querySelector('.hero-progress span');
+  const controls = root.querySelector('[data-hero-controls]');
+  const progress = root.querySelector('[data-hero-progress]');
   if (!slides.length) return;
 
+  const duration = () => parseFloat(getComputedStyle(root).getPropertyValue('--motion-hero-cycle'));
   let current = 0;
   let phase = 0;
   let timer = 0;
-  let progressAnimation = null;
-  let isVisible = true;
-  const sceneDuration = 4500;
-  const pairDuration = 4500;
-  const cycleDuration = sceneDuration + pairDuration;
+  let started = 0;
+  let remaining = 0;
+  let inView = true;
+  let focusedSlide = false;
+  let leaving = false;
+  const warmIndices = new Set();
+  let warmScheduled = false;
 
-  const runWhenIdle = callback => {
-    if ('requestIdleCallback' in window) window.requestIdleCallback(callback, { timeout: 800 });
-    else window.setTimeout(callback, 180);
-  };
-
-  const hydrate = (index, selector) => {
-    const image = slides[index]?.querySelector(`${selector}[data-src]`);
-    const source = image?.dataset.src;
-    if (!image || !source) return;
-    image.src = source;
-    if (image.dataset.srcset) image.srcset = image.dataset.srcset;
-    image.removeAttribute('data-src');
-    image.removeAttribute('data-srcset');
-  };
-
-  const warm = index => runWhenIdle(() => {
-    hydrate(index, '.hero-scene--feet');
-    hydrate(index, '.hero-scene--pair');
-  });
-
-  const pause = () => {
-    window.clearTimeout(timer);
-    timer = 0;
-    progressAnimation?.pause();
-  };
-
-  const playProgress = () => {
-    progressAnimation?.cancel();
-    progressAnimation = progress?.animate(
-      [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }],
-      { duration: cycleDuration, fill: 'forwards', easing: 'linear' }
-    ) ?? null;
-  };
-
-  const schedule = () => {
-    window.clearTimeout(timer);
-    if (!isVisible || document.hidden) return;
-    timer = window.setTimeout(() => {
-      if (phase === 0) {
-        phase = 1;
-        slides[current].classList.add('is-pair');
-        schedule();
-      } else {
-        show(current + 1);
-      }
-    }, phase === 0 ? sceneDuration : pairDuration);
-  };
-
-  const show = next => {
-    root.classList.add('has-transitioned');
-    slides[current].classList.remove('is-active', 'is-pair');
-    current = (next + slides.length) % slides.length;
-    phase = 0;
-    hydrate(current, '.hero-scene--feet');
-    slides[current].classList.add('is-active');
-    dots.forEach((dot, index) => dot.classList.toggle('is-active', index === current));
-    warm(current);
-    warm((current + 1) % slides.length);
-    if (isVisible && !document.hidden) playProgress();
-    schedule();
-  };
-
-  root.querySelector('[data-hero-prev]')?.addEventListener('click', () => show(current - 1));
-  root.querySelector('[data-hero-next]')?.addEventListener('click', () => show(current + 1));
-
-  if ('IntersectionObserver' in window) {
-    new IntersectionObserver(entries => {
-      isVisible = entries.some(entry => entry.isIntersecting);
-      if (isVisible && !document.hidden) {
-        playProgress();
-        schedule();
-      } else {
-        pause();
-      }
-    }, { threshold: 0 }).observe(root);
+  function hydrate(index, selector = '.hero-scene') {
+    const images = slides[index].querySelectorAll(selector + '[data-src]');
+    for (const image of images) {
+      if (image.dataset.srcset) image.srcset = image.dataset.srcset;
+      image.src = image.dataset.src;
+      delete image.dataset.src;
+      delete image.dataset.srcset;
+    }
   }
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pause();
-    else if (isVisible) {
-      playProgress();
-      schedule();
+  function warmNextSlides() {
+    warmIndices.add(current);
+    warmIndices.add((current + 1) % slides.length);
+    if (warmScheduled) return;
+    warmScheduled = true;
+    const load = () => {
+      warmScheduled = false;
+      if (!leaving) warmIndices.forEach(index => hydrate(index));
+      warmIndices.clear();
+    };
+    if (typeof requestIdleCallback === 'function') requestIdleCallback(load, { timeout: 800 });
+    else setTimeout(load, 180);
+  }
+
+  function setSlide(index, active) {
+    const slide = slides[index];
+    slide.classList.toggle('is-active', active);
+    slide.toggleAttribute('inert', !active);
+    if (active) slide.removeAttribute('aria-hidden');
+    else slide.setAttribute('aria-hidden', 'true');
+    for (const link of slide.querySelectorAll('a')) {
+      if (active) link.removeAttribute('tabindex');
+      else link.tabIndex = -1;
     }
+    dots[index]?.classList.toggle('is-active', active);
+  }
+
+  function pause() {
+    if (timer) remaining = Math.max(0, remaining - (performance.now() - started));
+    clearTimeout(timer);
+    timer = 0;
+    root.classList.remove('is-playing');
+  }
+
+  function sync() {
+    if (leaving || !inView || focusedSlide || document.hidden) {
+      pause();
+      return;
+    }
+    if (timer) return;
+    if (!remaining) remaining = duration() / 2;
+    if (!(remaining > 0)) return;
+    root.classList.add('is-playing');
+    started = performance.now();
+    timer = setTimeout(advance, remaining);
+  }
+
+  function resetCycle() {
+    pause();
+    remaining = 0;
+    phase = 0;
+    slides[current].classList.remove('is-pair');
+    // Replacing the decorative bar restarts its CSS timeline without forcing layout.
+    progress.firstElementChild.replaceWith(progress.firstElementChild.cloneNode(false));
+  }
+
+  function show(next) {
+    resetCycle();
+    root.classList.add('has-transitioned');
+    setSlide(current, false);
+    current = (next + slides.length) % slides.length;
+    hydrate(current, '.hero-scene--feet');
+    warmNextSlides();
+    setSlide(current, true);
+    sync();
+  }
+
+  function advance() {
+    timer = 0;
+    remaining = 0;
+    if (phase === 0) {
+      const pair = slides[current].querySelector('.hero-scene--pair');
+      if (pair?.naturalWidth) slides[current].classList.add('is-pair');
+      phase = 1;
+      sync();
+    } else {
+      show(current + 1);
+    }
+  }
+
+  root.querySelector('[data-hero-prev]').addEventListener('click', () => show(current - 1));
+  root.querySelector('[data-hero-next]').addEventListener('click', () => show(current + 1));
+  root.addEventListener('focusin', event => {
+    focusedSlide = Boolean(event.target.closest('.hero-slide'));
+    sync();
+  });
+  root.addEventListener('focusout', event => {
+    focusedSlide = Boolean(event.relatedTarget?.closest?.('.hero-slide'));
+    sync();
+  });
+  root.addEventListener('error', event => {
+    if (!event.target.matches('.hero-scene')) return;
+    event.target.hidden = true;
+    if (event.target.matches('.hero-scene--pair')) event.target.closest('.hero-slide').classList.remove('is-pair');
+  }, true);
+
+  if (typeof IntersectionObserver === 'function') {
+    try {
+      new IntersectionObserver(([entry]) => {
+        inView = entry.isIntersecting;
+        sync();
+      }).observe(root);
+    } catch { /* Manual controls and the normal timer are still available. */ }
+  }
+  document.addEventListener('visibilitychange', sync);
+  window.addEventListener('pagehide', () => { leaving = true; pause(); });
+  window.addEventListener('pageshow', event => {
+    leaving = false;
+    if (event.persisted) warmNextSlides();
+    sync();
   });
 
-  warm(current);
-  warm(1 % slides.length);
-  playProgress();
-  schedule();
+  slides.forEach((slide, index) => setSlide(index, index === current));
+  warmNextSlides();
+  controls.hidden = progress.hidden = false;
+  sync();
 })();
